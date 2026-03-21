@@ -92,7 +92,7 @@ html,body{height:100%;background:#07070a;color:#edeae0;font-family:'DM Sans',san
    APP LAYOUT
 ═══════════════════════════ */
 #app{display:none;min-height:100vh;background:var(--bg);}
-.layout{display:flex;min-height:100vh;}
+.layout{display:flex;min-height:100vh;width:100%;}
 
 /* SIDEBAR */
 .sidebar{
@@ -100,6 +100,7 @@ html,body{height:100%;background:#07070a;color:#edeae0;font-family:'DM Sans',san
   border-right:1px solid var(--border);
   display:flex;flex-direction:column;padding:22px 14px 20px;
   position:fixed;top:0;left:0;bottom:0;z-index:100;
+  overflow-y:auto;
 }
 .sidebar-logo{padding:0 4px;margin-bottom:28px;}
 .sidebar-logo img{width:136px;height:auto;filter:drop-shadow(0 0 8px rgba(37,99,235,.2));}
@@ -119,7 +120,7 @@ html,body{height:100%;background:#07070a;color:#edeae0;font-family:'DM Sans',san
 .btn-logout:hover{border-color:var(--warn);color:var(--warn);}
 
 /* CONTENT */
-.content{margin-left:var(--sw);flex:1;padding:32px 36px;max-width:1300px;}
+.content{margin-left:var(--sw);flex:1;padding:32px 36px;max-width:1300px;min-height:100vh;background:var(--bg);}
 
 /* PAGES */
 .page{display:none;}
@@ -519,12 +520,28 @@ window._F = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOu
 
 onAuthStateChanged(auth, u => {
   if(u){
-    showPg('app');
-    document.getElementById('user-em').textContent = u.email;
     window._UID = u.uid;
-    loadAll().then(() => goPage('accueil'));
+    // Hide auth, show app
+    document.getElementById('pg-login').style.display = 'none';
+    document.getElementById('pg-register').style.display = 'none';
+    const appEl = document.getElementById('app');
+    appEl.style.display = 'block';
+    appEl.style.minHeight = '100vh';
+    document.getElementById('user-em').textContent = u.email;
+    document.getElementById('today').textContent = todayStr();
+    // Activate accueil page
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const pg = document.getElementById('page-accueil');
+    if(pg) pg.classList.add('active');
+    const btn = document.querySelector('.nav-btn[data-p="accueil"]');
+    if(btn) btn.classList.add('active');
+    // Load data
+    loadAll();
   } else {
-    showPg('pg-login');
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('pg-login').style.display = 'flex';
+    document.getElementById('pg-register').style.display = 'none';
   }
 });
 </script>
@@ -609,9 +626,14 @@ function fbErr(e){
    LOAD DATA
 ════════════════════════════ */
 async function loadAll(){
-  document.getElementById('today').textContent = todayStr();
-  await Promise.all([loadBobs(), loadArchs()]);
-  renderAccueil();
+  try {
+    const todayEl = document.getElementById('today');
+    if(todayEl) todayEl.textContent = todayStr();
+    await Promise.all([loadBobs(), loadArchs()]);
+    renderAccueil();
+  } catch(e) {
+    console.error('loadAll error:', e);
+  }
 }
 
 async function loadBobs(){
