@@ -728,3 +728,150 @@ tr.rupture .badge-ok { display: none; }
   .sidebar { transform: translateX(-100%); }
   .content { margin-left: 0; }
 }
+
+/* ══════════════════════════════════════
+   AUTH — LOGO IMAGE + FUTURISTE
+══════════════════════════════════════ */
+
+/* Grille animée bleue */
+.auth-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: authGridMove 20s linear infinite;
+}
+@keyframes authGridMove { to { background-position: 44px 44px; } }
+
+/* Override glow bleu */
+.auth-screen {
+  background: #07070a;
+}
+.auth-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(30,80,200,0.12) 0%, transparent 70%);
+}
+
+/* Coins décoratifs */
+.auth-corners { position: absolute; inset: 0; pointer-events: none; }
+.ac { position: absolute; width: 38px; height: 38px; }
+.ac::before, .ac::after { content: ''; position: absolute; background: rgba(59,130,246,0.45); }
+.ac::before { width: 100%; height: 1.5px; top: 0; }
+.ac::after  { width: 1.5px; height: 100%; top: 0; }
+.ac-tl { top: 22px; left: 22px; }
+.ac-tr { top: 22px; right: 22px; transform: scaleX(-1); }
+.ac-bl { bottom: 22px; left: 22px; transform: scaleY(-1); }
+.ac-br { bottom: 22px; right: 22px; transform: scale(-1); }
+
+/* Card override */
+.auth-card {
+  background: rgba(10,10,16,0.97);
+  border: 1px solid rgba(59,130,246,0.18);
+  box-shadow: 0 0 80px rgba(30,80,200,0.07), 0 32px 64px rgba(0,0,0,0.85);
+  gap: 11px;
+  padding: 32px 34px 30px;
+}
+
+/* Logo image */
+.auth-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.auth-logo-img {
+  width: 220px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(30,100,255,0.3));
+  animation: logoPulse 4s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%,100% { filter: drop-shadow(0 0 14px rgba(30,100,255,0.22)); }
+  50%      { filter: drop-shadow(0 0 30px rgba(30,100,255,0.45)); }
+}
+.auth-logo-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(100,160,255,0.4);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* Séparateur scanline */
+.auth-sep {
+  position: relative;
+  height: 1px;
+  background: rgba(59,130,246,0.08);
+  overflow: hidden;
+  margin: 2px 0;
+}
+.auth-sep::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(59,130,246,0.7), transparent);
+  animation: authScan 2.5s linear infinite;
+}
+@keyframes authScan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* Field labels futuristes */
+.auth-field-wrap { display: flex; flex-direction: column; }
+.auth-field-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(100,160,255,0.55);
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* Champs override bleu */
+.auth-card .field {
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(59,130,246,0.14);
+}
+.auth-card .field:focus {
+  border-color: rgba(59,130,246,0.5);
+  background: rgba(59,130,246,0.04);
+}
+
+/* Bouton primary bleu pour auth */
+.auth-card .btn-primary {
+  background: #1d4ed8;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(29,78,216,0.35);
+}
+.auth-card .btn-primary:hover { background: #1e40af; }
+
+/* Status bar */
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(100,160,255,0.3);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+.auth-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #3b82f6;
+  flex-shrink: 0;
+  animation: authBlink 1.8s ease-in-out infinite;
+}
+@keyframes authBlink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+
+/* Sidebar logo — remplacer l'hexagone par l'image */
+.sidebar .logo { padding: 0 2px; margin-bottom: 32px; }
+.sidebar-logo-img {
+  width: 140px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(30,100,255,0.2));
+}

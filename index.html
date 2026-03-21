@@ -14,34 +14,62 @@
 <!-- LOGIN -->
 <div id="auth-login" class="auth-screen">
   <div class="auth-bg"><div class="auth-grid"></div></div>
+  <div class="auth-corners">
+    <span class="ac ac-tl"></span><span class="ac ac-tr"></span>
+    <span class="ac ac-bl"></span><span class="ac ac-br"></span>
+  </div>
   <div class="auth-card">
-    <div class="logo">
-      <div class="logo-hex">3D</div>
-      <span class="logo-text">3D<em>Calc</em></span>
+    <div class="auth-logo-wrap">
+      <img class="auth-logo-img" src="https://r2.fivemanage.com/XEcvh0aBGRYhLzNNcRsQI/logo/ChatGPT_Image_3_fevr._2026_00_38_48.png" alt="3DCalc"/>
+      <div class="auth-logo-sub">Devis · Bobines · Archives · CHF</div>
     </div>
-    <p class="auth-subtitle">Calculateur Impression 3D</p>
+    <div class="auth-sep"></div>
     <div id="login-msg" style="display:none"></div>
-    <input type="email" id="login-email" class="field" placeholder="Email"/>
-    <input type="password" id="login-password" class="field" placeholder="Mot de passe"/>
-    <button class="btn-primary" style="width:100%;padding:12px;" onclick="login()">Connexion →</button>
+    <div class="auth-field-wrap">
+      <span class="auth-field-label">Identifiant</span>
+      <input type="email" id="login-email" class="field" placeholder="votre@email.com"/>
+    </div>
+    <div class="auth-field-wrap">
+      <span class="auth-field-label">Code d'accès</span>
+      <input type="password" id="login-password" class="field" placeholder="••••••••"/>
+    </div>
+    <button class="btn-primary" style="width:100%;padding:13px;" onclick="login()">Connexion →</button>
     <button class="btn-ghost" onclick="showRegister()">Créer un compte</button>
+    <div class="auth-status">
+      <span class="auth-dot"></span>
+      Système opérationnel · Firebase · Sécurisé
+    </div>
   </div>
 </div>
 
 <!-- REGISTER -->
 <div id="auth-register" class="auth-screen" style="display:none">
   <div class="auth-bg"><div class="auth-grid"></div></div>
+  <div class="auth-corners">
+    <span class="ac ac-tl"></span><span class="ac ac-tr"></span>
+    <span class="ac ac-bl"></span><span class="ac ac-br"></span>
+  </div>
   <div class="auth-card">
-    <div class="logo">
-      <div class="logo-hex">3D</div>
-      <span class="logo-text">3D<em>Calc</em></span>
+    <div class="auth-logo-wrap">
+      <img class="auth-logo-img" src="https://r2.fivemanage.com/XEcvh0aBGRYhLzNNcRsQI/logo/ChatGPT_Image_3_fevr._2026_00_38_48.png" alt="3DCalc"/>
+      <div class="auth-logo-sub">Créer un compte</div>
     </div>
-    <p class="auth-subtitle">Créer un compte</p>
+    <div class="auth-sep"></div>
     <div id="reg-msg" style="display:none"></div>
-    <input type="email" id="reg-email" class="field" placeholder="Email"/>
-    <input type="password" id="reg-password" class="field" placeholder="Mot de passe (min. 6 caractères)"/>
-    <button class="btn-primary" style="width:100%;padding:12px;" onclick="register()">Créer le compte →</button>
+    <div class="auth-field-wrap">
+      <span class="auth-field-label">Email</span>
+      <input type="email" id="reg-email" class="field" placeholder="votre@email.com"/>
+    </div>
+    <div class="auth-field-wrap">
+      <span class="auth-field-label">Mot de passe</span>
+      <input type="password" id="reg-password" class="field" placeholder="Minimum 6 caractères"/>
+    </div>
+    <button class="btn-primary" style="width:100%;padding:13px;" onclick="register()">Créer le compte →</button>
     <button class="btn-ghost" onclick="showLogin()">← Retour connexion</button>
+    <div class="auth-status">
+      <span class="auth-dot"></span>
+      Système opérationnel · Firebase · Sécurisé
+    </div>
   </div>
 </div>
 
@@ -50,8 +78,7 @@
 
   <nav class="sidebar">
     <div class="logo">
-      <div class="logo-hex">3D</div>
-      <span class="logo-text">3D<em>Calc</em></span>
+      <img class="sidebar-logo-img" src="https://r2.fivemanage.com/XEcvh0aBGRYhLzNNcRsQI/logo/ChatGPT_Image_3_fevr._2026_00_38_48.png" alt="3DCalc"/>
     </div>
     <div class="nav-links">
       <button class="nav-link active" data-page="accueil" onclick="showPage('accueil')">
