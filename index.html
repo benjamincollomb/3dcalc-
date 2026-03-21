@@ -33,7 +33,7 @@ html,body{height:100%;background:#07070a;color:#edeae0;font-family:'DM Sans',san
   min-height:100vh;display:flex;align-items:center;justify-content:center;
   background:#07070a;position:relative;overflow:hidden;
 }
-.auth-wrap.hidden{display:none;}
+.auth-wrap.hidden{display:none!important;}
 .auth-bg{position:absolute;inset:0;
   background-image:linear-gradient(rgba(59,130,246,.05) 1px,transparent 1px),
     linear-gradient(90deg,rgba(59,130,246,.05) 1px,transparent 1px);
@@ -91,7 +91,7 @@ html,body{height:100%;background:#07070a;color:#edeae0;font-family:'DM Sans',san
 /* ═══════════════════════════
    APP LAYOUT
 ═══════════════════════════ */
-#app{display:none;min-height:100vh;}
+#app{display:none;min-height:100vh;background:var(--bg);}
 .layout{display:flex;min-height:100vh;}
 
 /* SIDEBAR */
@@ -522,7 +522,7 @@ onAuthStateChanged(auth, u => {
     showPg('app');
     document.getElementById('user-em').textContent = u.email;
     window._UID = u.uid;
-    loadAll();
+    loadAll().then(() => goPage('accueil'));
   } else {
     showPg('pg-login');
   }
@@ -542,14 +542,12 @@ const PAL = ['#c8ff57','#ff6b35','#57c8ff','#ff57c8','#57ffb0','#ffc857','#c857f
    PAGE ROUTING
 ════════════════════════════ */
 function showPg(id){
-  // auth pages
-  ['pg-login','pg-register'].forEach(p=>{
-    const el = document.getElementById(p);
-    if(el) el.className = 'auth-wrap' + (p===id?'':' hidden');
-  });
-  // app
-  const app = document.getElementById('app');
-  if(app) app.className = id==='app'?'':'hidden';
+  const login = document.getElementById('pg-login');
+  const reg   = document.getElementById('pg-register');
+  const app   = document.getElementById('app');
+  if(login) login.style.display = id==='pg-login' ? 'flex' : 'none';
+  if(reg)   reg.style.display   = id==='pg-register' ? 'flex' : 'none';
+  if(app)   app.style.display   = id==='app' ? 'block' : 'none';
 }
 
 function goPage(name){
