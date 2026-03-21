@@ -1,405 +1,945 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>3DCalc — Calculateur Impression 3D</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/style.css"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>3DCalc</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#07070a;color:#edeae0;font-family:'DM Sans',sans-serif;font-size:14px;}
+:root{
+  --bg:#07070a;--bg2:#0f0f12;--bg3:#17171b;--card:#111115;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#c8ff57;--warn:#ff6b35;--ok:#57ff9a;--blue:#2563eb;
+  --text:#edeae0;--text2:#7a7870;--text3:#444;
+  --mono:'Space Mono',monospace;--r:10px;--sw:220px;
+}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:#222;border-radius:3px;}
+
+/* ═══════════════════════════
+   AUTH
+═══════════════════════════ */
+@keyframes gridMove{to{background-position:44px 44px;}}
+@keyframes scan{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+@keyframes pulse{0%,100%{filter:drop-shadow(0 0 12px rgba(37,99,235,0.3));}50%{filter:drop-shadow(0 0 28px rgba(37,99,235,0.55));}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.15;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes slideUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.auth-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:#07070a;position:relative;overflow:hidden;
+}
+.auth-wrap.hidden{display:none;}
+.auth-bg{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(59,130,246,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(59,130,246,.05) 1px,transparent 1px);
+  background-size:44px 44px;animation:gridMove 20s linear infinite;}
+.auth-glow{position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(30,80,200,.13) 0%,transparent 70%);}
+.corner{position:fixed;width:34px;height:34px;pointer-events:none;z-index:5;}
+.corner.tl{top:18px;left:18px;border-top:1.5px solid rgba(59,130,246,.4);border-left:1.5px solid rgba(59,130,246,.4);}
+.corner.tr{top:18px;right:18px;border-top:1.5px solid rgba(59,130,246,.4);border-right:1.5px solid rgba(59,130,246,.4);}
+.corner.bl{bottom:18px;left:18px;border-bottom:1.5px solid rgba(59,130,246,.4);border-left:1.5px solid rgba(59,130,246,.4);}
+.corner.br{bottom:18px;right:18px;border-bottom:1.5px solid rgba(59,130,246,.4);border-right:1.5px solid rgba(59,130,246,.4);}
+
+.auth-card{
+  position:relative;z-index:2;width:400px;
+  background:rgba(10,10,16,.97);
+  border:1px solid rgba(59,130,246,.2);
+  border-radius:20px;padding:36px 34px 30px;
+  display:flex;flex-direction:column;gap:13px;
+  box-shadow:0 0 80px rgba(30,80,200,.08),0 32px 64px rgba(0,0,0,.8);
+  animation:fadeUp .3s ease;
+}
+.auth-logo{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:4px;}
+.auth-logo img{width:220px;height:auto;animation:pulse 4s ease-in-out infinite;}
+.auth-logo-sub{font-family:var(--mono);font-size:9px;color:rgba(100,160,255,.4);letter-spacing:3px;text-transform:uppercase;}
+.auth-sep{position:relative;height:1px;background:rgba(59,130,246,.08);overflow:hidden;margin:0;}
+.auth-sep::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(59,130,246,.7),transparent);animation:scan 2.5s linear infinite;}
+.auth-label{font-family:var(--mono);font-size:9px;color:rgba(100,160,255,.55);letter-spacing:1.8px;text-transform:uppercase;display:block;margin-bottom:5px;}
+.auth-input{
+  width:100%;padding:11px 14px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(59,130,246,.15);
+  border-radius:var(--r);color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+}
+.auth-input:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.04);}
+.auth-input::placeholder{color:#333;}
+.btn-login{
+  padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.2px;
+  text-transform:uppercase;cursor:pointer;width:100%;
+  box-shadow:0 4px 20px rgba(37,99,235,.35);transition:background .15s;
+}
+.btn-login:hover{background:#1e40af;}
+.btn-ghost-auth{
+  padding:11px;background:transparent;color:rgba(255,255,255,.3);
+  border:1px solid rgba(255,255,255,.07);border-radius:var(--r);
+  font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;width:100%;
+  transition:all .15s;
+}
+.btn-ghost-auth:hover{border-color:rgba(59,130,246,.3);color:rgba(255,255,255,.6);}
+.auth-status{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9px;color:rgba(100,160,255,.3);}
+.auth-dot{width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0;animation:blink 1.8s ease-in-out infinite;display:inline-block;}
+.msg-err{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;display:none;}
+.msg-ok{background:rgba(87,255,154,.1);border:1px solid rgba(87,255,154,.2);color:var(--ok);border-radius:8px;padding:10px 14px;font-size:13px;display:none;}
+
+/* ═══════════════════════════
+   APP LAYOUT
+═══════════════════════════ */
+#app{display:none;min-height:100vh;}
+.layout{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:var(--sw);min-height:100vh;background:#0c0c10;
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:22px 14px 20px;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+}
+.sidebar-logo{padding:0 4px;margin-bottom:28px;}
+.sidebar-logo img{width:136px;height:auto;filter:drop-shadow(0 0 8px rgba(37,99,235,.2));}
+.nav-links{display:flex;flex-direction:column;gap:2px;flex:1;}
+.nav-btn{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:8px;color:var(--text2);font-size:14px;cursor:pointer;
+  transition:all .14s;border:none;background:none;font-family:'DM Sans',sans-serif;
+  text-align:left;width:100%;
+}
+.nav-btn:hover{background:var(--bg3);color:var(--text);}
+.nav-btn.active{background:rgba(200,255,87,.07);color:var(--accent);}
+.nav-ic{font-size:15px;width:20px;text-align:center;}
+.sidebar-bottom{margin-top:auto;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+.user-em{font-size:11px;color:var(--text3);font-family:var(--mono);word-break:break-all;padding:2px 4px;}
+.btn-logout{background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.btn-logout:hover{border-color:var(--warn);color:var(--warn);}
+
+/* CONTENT */
+.content{margin-left:var(--sw);flex:1;padding:32px 36px;max-width:1300px;}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;animation:fadeUp .2s ease;}
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.page-hdr h1{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.5px;}
+.date-tag{font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 11px;}
+
+/* ═══════════════════════════
+   ACCUEIL
+═══════════════════════════ */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.stat.ok::before{background:var(--ok);}
+.stat.warn::before{background:var(--warn);}
+.stat.blue::before{background:var(--blue);}
+.stat-lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-family:var(--mono);margin-bottom:10px;}
+.stat-val{font-family:var(--mono);font-size:32px;font-weight:700;}
+.stat-val.sm{font-size:15px;line-height:1.4;}
+.sec-title{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
+.action-btn{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 14px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;transition:all .15s;color:var(--text);font-family:'DM Sans',sans-serif;}
+.action-btn:hover{border-color:var(--accent);background:rgba(200,255,87,.04);transform:translateY(-2px);}
+.action-ic{font-size:20px;}
+.action-lbl{font-size:12px;color:var(--text2);text-align:center;line-height:1.3;}
+.recent-list{display:flex;flex-direction:column;gap:7px;}
+.recent-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .14s;}
+.recent-item:hover{border-color:var(--border2);background:var(--bg3);}
+.r-info{flex:1;min-width:0;}
+.r-nom{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.r-meta{font-size:12px;color:var(--text2);margin-top:2px;}
+.r-date{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap;}
+.r-prix{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--accent);white-space:nowrap;}
+.empty{text-align:center;padding:40px 20px;color:var(--text3);font-family:var(--mono);font-size:12px;}
+
+/* ═══════════════════════════
+   CARDS / FORMS
+═══════════════════════════ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:14px;}
+.card-title{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.flabel{display:block;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 5px;}
+.flabel:first-child{margin-top:0;}
+.field{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .18s;-webkit-appearance:none;appearance:none;}
+.field:focus{border-color:var(--accent);}
+.field::placeholder{color:var(--text3);}
+select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7870'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;}
+.hint{font-size:11px;color:var(--text3);margin-top:4px;}
+.btn-primary{background:var(--accent);color:#050505;border:none;border-radius:var(--r);padding:10px 20px;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.3px;white-space:nowrap;}
+.btn-primary:hover{background:#b8ef47;transform:translateY(-1px);}
+.btn-secondary{background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 18px;font-size:13px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.btn-secondary:hover{color:var(--text);border-color:var(--text2);}
+.btn-del{background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;transition:all .15s;}
+.btn-del:hover{border-color:var(--warn);color:var(--warn);}
+
+/* ═══════════════════════════
+   DEVIS
+═══════════════════════════ */
+.brow{display:grid;grid-template-columns:1fr 130px auto;gap:9px;align-items:end;margin-bottom:9px;}
+.brow-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.btn-rmv{background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:10px 11px;cursor:pointer;transition:all .14s;margin-top:19px;}
+.btn-rmv:hover{border-color:var(--warn);color:var(--warn);}
+.result-card{border-color:rgba(200,255,87,.15);}
+.result-rows{display:flex;flex-direction:column;}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text2);}
+.rrow.strong{color:var(--text);font-weight:500;}
+.rrow.final{border-bottom:none;padding-top:14px;}
+.rval{font-family:var(--mono);}
+.rfinal{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--accent);}
+.rlbl-big{font-size:15px;font-weight:500;color:var(--text);}
+.items-detail{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.iline{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);background:var(--bg3);border-radius:6px;padding:7px 11px;}
+.iid{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.iacc{color:var(--accent);font-family:var(--mono);}
+.msg-success{background:rgba(87,255,154,.08);border:1px solid rgba(87,255,154,.2);color:var(--ok);border-radius:8px;padding:10px 14px;font-size:13px;display:none;}
+.msg-error{background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13px;display:none;}
+
+/* ═══════════════════════════
+   TABLES
+═══════════════════════════ */
+.search-input{margin-bottom:14px;}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+.dtable{width:100%;border-collapse:collapse;font-size:13px;}
+.dtable th{background:var(--bg3);text-align:left;font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;padding:10px 13px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.dtable td{padding:11px 13px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
+.dtable tr:last-child td{border-bottom:none;}
+.dtable tr:hover td{background:var(--bg3);}
+.dtable td.mono{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.dtable td.strong{color:var(--text);font-weight:500;}
+.dtable td.acc{font-family:var(--mono);font-weight:700;color:var(--accent);}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:.3px;}
+.b-ok{background:rgba(87,255,154,.1);color:var(--ok);border:1px solid rgba(87,255,154,.2);}
+.b-warn{background:rgba(255,107,53,.1);color:var(--warn);border:1px solid rgba(255,107,53,.25);}
+.b-ami{background:rgba(200,255,87,.08);color:var(--accent);border:1px solid rgba(200,255,87,.2);}
+.b-gray{background:var(--bg3);color:var(--text3);border:1px solid var(--border);}
+.cdot{display:inline-block;width:9px;height:9px;border-radius:50%;border:1px solid rgba(255,255,255,.15);vertical-align:middle;margin-right:5px;}
+tr.rupt td{background:rgba(255,107,53,.04)!important;color:rgba(255,107,53,.6)!important;}
+
+/* ═══════════════════════════
+   MODAL
+═══════════════════════════ */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.modal.open{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:28px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.7);}
+.modal-box.wide{max-width:760px;}
+.modal-title{font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:18px;}
+.modal-foot{display:flex;gap:10px;margin-top:18px;}
+.modal-foot>*{flex:1;}
+
+/* DETAIL ARCHIVE */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;}
+.ditem{background:var(--bg3);border-radius:8px;padding:11px 13px;}
+.dkey{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono);margin-bottom:3px;}
+.dval{font-size:14px;color:var(--text);font-weight:500;}
+.dval.mono{font-family:var(--mono);}
+.dval.big{font-size:22px;color:var(--accent);font-family:var(--mono);font-weight:700;}
+.flist{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.fitem{background:var(--bg3);border-radius:8px;padding:9px 13px;display:flex;justify-content:space-between;font-size:13px;}
+.fid{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.facc{color:var(--accent);font-family:var(--mono);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--accent);color:#000;font-family:var(--mono);font-size:12px;font-weight:700;padding:11px 20px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideUp .2s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* MISC */
+.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}.w100{width:100%;}.hidden{display:none!important;}
+.flex-between{display:flex;align-items:center;justify-content:space-between;}
+</style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="auth-login" class="auth-screen">
-  <div class="auth-bg"><div class="auth-grid"></div></div>
+<!-- ═══════ LOGIN ═══════ -->
+<div id="pg-login" class="auth-wrap">
+  <div class="auth-bg"></div>
+  <div class="auth-glow"></div>
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
   <div class="auth-card">
-    <div class="logo">
-      <div class="logo-hex">3D</div>
-      <span class="logo-text">3D<em>Calc</em></span>
+    <div class="auth-logo">
+      <img src="https://r2.fivemanage.com/XEcvh0aBGRYhLzNNcRsQI/logo/ChatGPT_Image_3_fevr._2026_00_38_48.png" alt="3DCalc"/>
+      <div class="auth-logo-sub">Devis · Bobines · Archives · CHF</div>
     </div>
-    <p class="auth-subtitle">Calculateur Impression 3D</p>
-    <div id="login-msg" style="display:none"></div>
-    <input type="email" id="login-email" class="field" placeholder="Email"/>
-    <input type="password" id="login-password" class="field" placeholder="Mot de passe"/>
-    <button class="btn-primary" style="width:100%;padding:12px;" onclick="login()">Connexion →</button>
-    <button class="btn-ghost" onclick="showRegister()">Créer un compte</button>
+    <div class="auth-sep"></div>
+    <div id="login-err" class="msg-err"></div>
+    <div><span class="auth-label">Identifiant</span>
+      <input id="li-email" class="auth-input" type="email" placeholder="votre@email.com"/></div>
+    <div><span class="auth-label">Code d'accès</span>
+      <input id="li-pass" class="auth-input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <button class="btn-login" onclick="doLogin()">Connexion →</button>
+    <button class="btn-ghost-auth" onclick="showPg('pg-register')">Créer un compte</button>
+    <div class="auth-status"><span class="auth-dot"></span>Système opérationnel · Firebase · Sécurisé</div>
   </div>
 </div>
 
-<!-- REGISTER -->
-<div id="auth-register" class="auth-screen" style="display:none">
-  <div class="auth-bg"><div class="auth-grid"></div></div>
+<!-- ═══════ REGISTER ═══════ -->
+<div id="pg-register" class="auth-wrap hidden">
+  <div class="auth-bg"></div><div class="auth-glow"></div>
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
   <div class="auth-card">
-    <div class="logo">
-      <div class="logo-hex">3D</div>
-      <span class="logo-text">3D<em>Calc</em></span>
+    <div class="auth-logo">
+      <img src="https://r2.fivemanage.com/XEcvh0aBGRYhLzNNcRsQI/logo/ChatGPT_Image_3_fevr._2026_00_38_48.png" alt="3DCalc"/>
+      <div class="auth-logo-sub">Créer un compte</div>
     </div>
-    <p class="auth-subtitle">Créer un compte</p>
-    <div id="reg-msg" style="display:none"></div>
-    <input type="email" id="reg-email" class="field" placeholder="Email"/>
-    <input type="password" id="reg-password" class="field" placeholder="Mot de passe (min. 6 caractères)"/>
-    <button class="btn-primary" style="width:100%;padding:12px;" onclick="register()">Créer le compte →</button>
-    <button class="btn-ghost" onclick="showLogin()">← Retour connexion</button>
+    <div class="auth-sep"></div>
+    <div id="reg-err" class="msg-err"></div>
+    <div id="reg-ok" class="msg-ok"></div>
+    <div><span class="auth-label">Email</span>
+      <input id="reg-email" class="auth-input" type="email" placeholder="votre@email.com"/></div>
+    <div><span class="auth-label">Mot de passe</span>
+      <input id="reg-pass" class="auth-input" type="password" placeholder="Minimum 6 caractères"/></div>
+    <button class="btn-login" onclick="doRegister()">Créer le compte →</button>
+    <button class="btn-ghost-auth" onclick="showPg('pg-login')">← Retour connexion</button>
+    <div class="auth-status"><span class="auth-dot"></span>Système opérationnel · Firebase · Sécurisé</div>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app" style="display:none">
+<!-- ═══════ APP ═══════ -->
+<div id="app" class="hidden">
+  <div class="layout">
 
-  <nav class="sidebar">
-    <div class="logo">
-      <div class="logo-hex">3D</div>
-      <span class="logo-text">3D<em>Calc</em></span>
-    </div>
-    <div class="nav-links">
-      <button class="nav-link active" data-page="accueil" onclick="showPage('accueil')">
-        <span class="nav-ic">◈</span>Accueil
-      </button>
-      <button class="nav-link" data-page="devis" onclick="showPage('devis')">
-        <span class="nav-ic">✦</span>Nouveau devis
-      </button>
-      <button class="nav-link" data-page="bobines" onclick="showPage('bobines')">
-        <span class="nav-ic">◎</span>Bobines
-      </button>
-      <button class="nav-link" data-page="archives" onclick="showPage('archives')">
-        <span class="nav-ic">▤</span>Archives
-      </button>
-    </div>
-    <div class="sidebar-bottom">
-      <span class="user-label" id="user-label"></span>
-      <button class="btn-logout" onclick="logout()">Déconnexion</button>
-    </div>
-  </nav>
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://r2.fivemanage.com/XEcvh0aBGRYhLzNNcRsQI/logo/ChatGPT_Image_3_fevr._2026_00_38_48.png" alt="3DCalc"/>
+      </div>
+      <div class="nav-links">
+        <button class="nav-btn active" data-p="accueil" onclick="goPage('accueil')"><span class="nav-ic">◈</span>Accueil</button>
+        <button class="nav-btn" data-p="devis" onclick="goPage('devis')"><span class="nav-ic">✦</span>Nouveau devis</button>
+        <button class="nav-btn" data-p="bobines" onclick="goPage('bobines')"><span class="nav-ic">◎</span>Bobines</button>
+        <button class="nav-btn" data-p="archives" onclick="goPage('archives')"><span class="nav-ic">▤</span>Archives</button>
+      </div>
+      <div class="sidebar-bottom">
+        <span class="user-em" id="user-em"></span>
+        <button class="btn-logout" onclick="doLogout()">Déconnexion</button>
+      </div>
+    </nav>
 
-  <main class="content">
+    <!-- MAIN -->
+    <main class="content">
 
-    <!-- ACCUEIL -->
-    <div id="page-accueil" class="page active">
-      <div class="page-header">
-        <h1>Tableau de bord</h1>
-        <span class="date-badge" id="today-date"></span>
+      <!-- ACCUEIL -->
+      <div id="page-accueil" class="page active">
+        <div class="page-hdr">
+          <h1>Tableau de bord</h1>
+          <span class="date-tag" id="today"></span>
+        </div>
+        <div class="stats">
+          <div class="stat ok"><div class="stat-lbl">Bobines disponibles</div><div class="stat-val" id="s-dispo">—</div></div>
+          <div class="stat warn"><div class="stat-lbl">En rupture</div><div class="stat-val" id="s-rupt">—</div></div>
+          <div class="stat"><div class="stat-lbl">Devis archivés</div><div class="stat-val" id="s-arch">—</div></div>
+          <div class="stat blue"><div class="stat-lbl">Dernier devis</div><div class="stat-val sm" id="s-last">—</div></div>
+        </div>
+        <p class="sec-title">Actions rapides</p>
+        <div class="actions">
+          <button class="action-btn" onclick="goPage('devis')"><span class="action-ic">✦</span><span class="action-lbl">Nouveau calcul</span></button>
+          <button class="action-btn" onclick="goPage('bobines');setTimeout(openModalBobine,100)"><span class="action-ic">＋</span><span class="action-lbl">Ajouter une bobine</span></button>
+          <button class="action-btn" onclick="goPage('bobines')"><span class="action-ic">◎</span><span class="action-lbl">Voir les bobines</span></button>
+          <button class="action-btn" onclick="goPage('archives')"><span class="action-ic">▤</span><span class="action-lbl">Voir les archives</span></button>
+        </div>
+        <p class="sec-title">Derniers devis</p>
+        <div id="recent"></div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card ok">
-          <div class="stat-label">Bobines disponibles</div>
-          <div class="stat-value" id="stat-bobines">—</div>
-        </div>
-        <div class="stat-card warn">
-          <div class="stat-label">En rupture</div>
-          <div class="stat-value" id="stat-rupture">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Devis archivés</div>
-          <div class="stat-value" id="stat-archives">—</div>
-        </div>
-        <div class="stat-card accent">
-          <div class="stat-label">Dernier devis</div>
-          <div class="stat-value sm" id="stat-last">—</div>
-        </div>
-      </div>
-      <p class="section-title">Actions rapides</p>
-      <div class="actions-grid">
-        <button class="action-card" onclick="showPage('devis')">
-          <span class="action-icon">✦</span>
-          <span class="action-label">Nouveau calcul</span>
-        </button>
-        <button class="action-card" onclick="showPage('bobines');setTimeout(openBobineModal,150)">
-          <span class="action-icon">＋</span>
-          <span class="action-label">Ajouter une bobine</span>
-        </button>
-        <button class="action-card" onclick="showPage('bobines')">
-          <span class="action-icon">◎</span>
-          <span class="action-label">Voir les bobines</span>
-        </button>
-        <button class="action-card" onclick="showPage('archives')">
-          <span class="action-icon">▤</span>
-          <span class="action-label">Voir les archives</span>
-        </button>
-      </div>
-      <p class="section-title">Derniers devis</p>
-      <div id="recent-list"></div>
-    </div>
 
-    <!-- DEVIS -->
-    <div id="page-devis" class="page">
-      <div class="page-header">
-        <h1>Nouveau devis</h1>
-        <button class="btn-primary" onclick="calculerDevis()">Calculer →</button>
-      </div>
-      <div class="devis-grid">
-        <div class="card">
-          <div class="card-title">Informations générales</div>
-          <label class="form-label">Nom du projet *</label>
-          <input id="d-nom" class="field" placeholder="ex: Boîte à outils vélo"/>
-          <label class="form-label">Client / Destinataire</label>
-          <input id="d-client" class="field" placeholder="ex: AMI, 7 ART, Benjamin…"/>
-          <label class="form-label">Type de marge</label>
-          <select id="d-type-marge" class="field" onchange="applyMargePreset()">
-            <option value="AMI">AMI — Amical (20%)</option>
-            <option value="7 ART">7 ART — Artistique (5%)</option>
-            <option value="CLIENT">CLIENT — Standard (40%)</option>
-            <option value="PERSO">PERSO — Personnel</option>
-          </select>
-          <label class="form-label">Marge (%)</label>
-          <input id="d-marge" class="field" type="number" value="20" min="0" max="500"/>
-          <p class="form-hint">Modifiable manuellement si besoin</p>
+      <!-- DEVIS -->
+      <div id="page-devis" class="page">
+        <div class="page-hdr">
+          <h1>Nouveau devis</h1>
+          <button class="btn-primary" onclick="calcDevis()">Calculer →</button>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Informations</div>
+            <label class="flabel">Nom du projet *</label>
+            <input id="d-nom" class="field" placeholder="ex: Boîte à outils vélo"/>
+            <label class="flabel">Client</label>
+            <input id="d-client" class="field" placeholder="ex: AMI, 7 ART…"/>
+            <label class="flabel">Type de marge</label>
+            <select id="d-type" class="field" onchange="applyMarge()">
+              <option value="AMI">AMI — Amical (20%)</option>
+              <option value="7 ART">7 ART — Artistique (5%)</option>
+              <option value="CLIENT">CLIENT — Standard (40%)</option>
+              <option value="PERSO">PERSO — Personnel</option>
+            </select>
+            <label class="flabel">Marge (%)</label>
+            <input id="d-marge" class="field" type="number" value="20" min="0" max="500"/>
+          </div>
+          <div class="card">
+            <div class="card-title">Impression</div>
+            <label class="flabel">Temps d'impression (h) *</label>
+            <input id="d-temps" class="field" type="number" step="0.1" placeholder="ex: 6.3"/>
+            <div class="hint">6.3 = 6h18</div>
+            <div class="grid2" style="margin-top:0">
+              <div><label class="flabel">Puissance (W)</label><input id="d-w" class="field" type="number" value="100"/></div>
+              <div><label class="flabel">Élec. (CHF/kWh)</label><input id="d-kwh" class="field" type="number" step="0.01" value="0.33"/></div>
+            </div>
+            <div class="grid2">
+              <div><label class="flabel">Prix fichier 3D</label><input id="d-fich" class="field" type="number" step="0.5" value="0"/></div>
+              <div><label class="flabel">Amorti sur (n)</label><input id="d-amort" class="field" type="number" value="1" min="1"/></div>
+            </div>
+            <div class="grid2">
+              <div><label class="flabel">Création 3D (h)</label><input id="d-dh" class="field" type="number" step="0.1" value="0"/></div>
+              <div><label class="flabel">Tarif création (CHF/h)</label><input id="d-dr" class="field" type="number" value="0"/></div>
+            </div>
+          </div>
         </div>
         <div class="card">
-          <div class="card-title">Paramètres d'impression</div>
-          <label class="form-label">Temps d'impression (h) *</label>
-          <input id="d-temps" class="field" type="number" step="0.1" placeholder="ex: 6.3"/>
-          <p class="form-hint">6.3 = 6h18 min</p>
-          <div class="form-row" style="margin-top:0">
-            <div>
-              <label class="form-label">Consommation (W)</label>
-              <input id="d-watts" class="field" type="number" value="100"/>
-            </div>
-            <div>
-              <label class="form-label">Prix élec. (CHF/kWh)</label>
-              <input id="d-elec" class="field" type="number" step="0.01" value="0.33"/>
-            </div>
+          <div class="flex-between" style="margin-bottom:14px">
+            <div class="card-title" style="margin:0">Filaments utilisés</div>
+            <button class="btn-secondary" onclick="addFilRow()">+ Ajouter filament</button>
           </div>
-          <div class="form-row">
-            <div>
-              <label class="form-label">Prix fichier 3D (CHF)</label>
-              <input id="d-fichier" class="field" type="number" step="0.5" value="0"/>
-            </div>
-            <div>
-              <label class="form-label">Amorti sur (n) impressions</label>
-              <input id="d-amorti" class="field" type="number" value="1" min="1"/>
-            </div>
+          <div id="fil-rows"></div>
+          <p class="hint mt8">Les bobines en rupture ne sont pas proposées.</p>
+        </div>
+        <div id="d-err" class="msg-error mt8"></div>
+        <!-- RÉSULTAT -->
+        <div class="card result-card hidden mt12" id="result-card">
+          <div class="card-title">Résultat</div>
+          <div class="result-rows">
+            <div class="rrow"><span>Coût électricité</span><span class="rval" id="r-elec">—</span></div>
+            <div class="rrow"><span>Coût fichier amorti</span><span class="rval" id="r-fich">—</span></div>
+            <div class="rrow"><span>Coût création 3D</span><span class="rval" id="r-design">—</span></div>
+            <div class="rrow"><span>Filament total</span><span class="rval" id="r-fil">—</span></div>
+            <div class="rrow strong"><span>Coût total brut</span><span class="rval" id="r-total">—</span></div>
+            <div class="rrow"><span>Marge (<span id="r-mpct">—</span>)</span><span class="rval" id="r-marge">—</span></div>
+            <div class="rrow final"><span class="rlbl-big">Prix arrondi ↑0.10 CHF</span><span class="rfinal" id="r-arrondi">—</span></div>
           </div>
-          <div class="form-row">
-            <div>
-              <label class="form-label">Création 3D (h)</label>
-              <input id="d-design-h" class="field" type="number" step="0.1" value="0"/>
-            </div>
-            <div>
-              <label class="form-label">Tarif création (CHF/h)</label>
-              <input id="d-design-rate" class="field" type="number" step="1" value="0"/>
-            </div>
-          </div>
+          <div class="card-title mt12">Détail filaments</div>
+          <div id="r-items" class="items-detail"></div>
+          <div id="arch-msg" class="msg-success mt8"></div>
+          <div id="arch-err" class="msg-error mt8"></div>
+          <button class="btn-primary w100 mt12" onclick="archiverDevis()">💾 Archiver ce devis</button>
         </div>
       </div>
 
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div class="card-title" style="margin:0">Filaments utilisés</div>
-          <button class="btn-secondary" onclick="addBobineRow()">+ Ajouter un filament</button>
+      <!-- BOBINES -->
+      <div id="page-bobines" class="page">
+        <div class="page-hdr">
+          <h1>Bobines de filament</h1>
+          <button class="btn-primary" onclick="openModalBobine()">+ Ajouter</button>
         </div>
-        <div id="devis-bobines-list"></div>
-        <p class="form-hint mt-8">Les bobines en rupture de stock ne sont pas proposées.</p>
-      </div>
-
-      <div id="devis-msg" style="display:none;margin-bottom:12px"></div>
-
-      <div class="card result-card hidden" id="result-card">
-        <div class="card-title">Résultat du calcul</div>
-        <div class="result-rows">
-          <div class="result-row">
-            <span>Coût électricité</span>
-            <span class="result-val" id="r-elec">—</span>
-          </div>
-          <div class="result-row">
-            <span>Coût fichier 3D (amorti)</span>
-            <span class="result-val" id="r-fichier">—</span>
-          </div>
-          <div class="result-row">
-            <span>Coût création 3D</span>
-            <span class="result-val" id="r-design">—</span>
-          </div>
-          <div class="result-row">
-            <span>Total filament</span>
-            <span class="result-val" id="r-filament">—</span>
-          </div>
-          <div class="result-row strong">
-            <span>Coût total brut</span>
-            <span class="result-val" id="r-total">—</span>
-          </div>
-          <div class="result-row">
-            <span>Prix + marge (<span id="r-marge-pct">—</span>)</span>
-            <span class="result-val" id="r-marge">—</span>
-          </div>
-          <div class="result-row final">
-            <span class="result-label-big">Prix arrondi (↑ 0.10 CHF)</span>
-            <span class="result-final-val" id="r-arrondi">—</span>
-          </div>
+        <input id="search-bob" class="field search-input" placeholder="🔎 Rechercher (ID, marque, couleur…)" oninput="renderBobines()"/>
+        <div class="table-wrap">
+          <table class="dtable">
+            <thead><tr><th>ID</th><th>Marque</th><th>Matière</th><th>Couleur</th><th>Prix/kg</th><th>Diam.</th><th>Poids</th><th>Statut</th><th>Lien</th><th></th></tr></thead>
+            <tbody id="bob-tbody"></tbody>
+          </table>
         </div>
-        <div style="margin-top:16px">
-          <p class="card-title">Détail filaments</p>
-          <div class="items-detail" id="r-items"></div>
+      </div>
+
+      <!-- ARCHIVES -->
+      <div id="page-archives" class="page">
+        <div class="page-hdr"><h1>Archives</h1></div>
+        <input id="search-arch" class="field search-input" placeholder="🔎 Rechercher un devis…" oninput="renderArchives()"/>
+        <div class="table-wrap">
+          <table class="dtable">
+            <thead><tr><th>Date</th><th>Nom</th><th>Client</th><th>Marge</th><th>Temps</th><th>Filaments</th><th>Coût</th><th>Prix final</th><th></th></tr></thead>
+            <tbody id="arch-tbody"></tbody>
+          </table>
         </div>
-        <div id="archive-msg" style="display:none;margin-top:12px"></div>
-        <button class="btn-primary mt-16" style="width:100%" onclick="archiverDevis()">
-          💾 Archiver ce devis
-        </button>
       </div>
-    </div>
 
-    <!-- BOBINES -->
-    <div id="page-bobines" class="page">
-      <div class="page-header">
-        <h1>Bobines de filament</h1>
-        <button class="btn-primary" onclick="openBobineModal()">+ Ajouter</button>
-      </div>
-      <input id="search-bobines" class="field search-bar" placeholder="🔎 Rechercher (ID, marque, couleur…)" oninput="renderBobines()"/>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th><th>Marque</th><th>Matière</th><th>Couleur</th>
-              <th>Prix/kg</th><th>Diam.</th><th>Poids</th><th>Statut</th><th>Lien</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="bobines-tbody">
-            <tr><td colspan="10"><div class="empty-state"><div class="empty-icon">◎</div>Chargement…</div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ARCHIVES -->
-    <div id="page-archives" class="page">
-      <div class="page-header">
-        <h1>Archives des devis</h1>
-      </div>
-      <input id="search-archives" class="field search-bar" placeholder="🔎 Rechercher un devis…" oninput="renderArchives()"/>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date</th><th>Nom</th><th>Client</th><th>Marge</th>
-              <th>Temps</th><th>Filaments</th><th>Coût total</th><th>Prix final</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="archives-tbody">
-            <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">▤</div>Chargement…</div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
+    </main>
+  </div>
 </div>
 
 <!-- MODAL BOBINE -->
-<div id="modal-bobine" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeBobineModal()">
+<div id="modal-bob" class="modal">
   <div class="modal-box">
     <div class="modal-title">+ Nouvelle bobine</div>
-    <div id="modal-bobine-msg" style="display:none;margin-bottom:12px"></div>
-    <label class="form-label">ID unique *</label>
+    <div id="mb-err" class="msg-err" style="margin-bottom:10px"></div>
+    <label class="flabel">ID (auto-généré)</label>
     <input id="b-id" class="field" placeholder="Généré automatiquement"/>
-    <p class="form-hint">Généré depuis Matière-Marque-Couleur-Diam. Modifiable.</p>
-    <div class="form-row">
-      <div>
-        <label class="form-label">Marque *</label>
-        <input id="b-marque" class="field" placeholder="Creality" oninput="autoIdBobine()"/>
-      </div>
-      <div>
-        <label class="form-label">Matière *</label>
-        <input id="b-matiere" class="field" placeholder="PLA" oninput="autoIdBobine()"/>
-      </div>
+    <div class="grid2">
+      <div><label class="flabel">Marque *</label><input id="b-marque" class="field" placeholder="Creality" oninput="autoId()"/></div>
+      <div><label class="flabel">Matière *</label><input id="b-mat" class="field" placeholder="PLA" oninput="autoId()"/></div>
     </div>
-    <div class="form-row">
-      <div>
-        <label class="form-label">Couleur *</label>
-        <input id="b-couleur" class="field" placeholder="Noir" oninput="autoIdBobine()"/>
-      </div>
-      <div>
-        <label class="form-label">Prix (CHF/kg) *</label>
-        <input id="b-prix" class="field" type="number" step="0.1" placeholder="19.90"/>
-      </div>
+    <div class="grid2">
+      <div><label class="flabel">Couleur *</label><input id="b-coul" class="field" placeholder="Noir" oninput="autoId()"/></div>
+      <div><label class="flabel">Prix CHF/kg *</label><input id="b-prix" class="field" type="number" step="0.1" placeholder="19.90"/></div>
     </div>
-    <div class="form-row">
-      <div>
-        <label class="form-label">Diamètre</label>
-        <select id="b-diam" class="field" onchange="autoIdBobine()">
-          <option>1,75 mm</option>
-          <option>2,85 mm</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label">Poids bobine</label>
-        <select id="b-poids" class="field">
-          <option>1000 g</option>
-          <option>750 g</option>
-          <option>500 g</option>
-          <option>250 g</option>
-        </select>
-      </div>
+    <div class="grid2">
+      <div><label class="flabel">Diamètre</label>
+        <select id="b-diam" class="field" onchange="autoId()"><option>1,75 mm</option><option>2,85 mm</option></select></div>
+      <div><label class="flabel">Poids bobine</label>
+        <select id="b-poids" class="field"><option>1000 g</option><option>750 g</option><option>500 g</option><option>250 g</option></select></div>
     </div>
-    <label class="form-label">Lien commande (optionnel)</label>
-    <input id="b-lien" class="field" placeholder="https://galaxus.ch/…"/>
-    <label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:14px">
-      <input type="checkbox" id="b-rupture" style="width:16px;height:16px;accent-color:var(--warn)"/>
+    <label class="flabel">Lien commande</label>
+    <input id="b-lien" class="field" placeholder="https://…"/>
+    <label class="flabel" style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-top:12px">
+      <input type="checkbox" id="b-rupt" style="width:15px;height:15px;accent-color:var(--warn)"/>
       <span>En rupture de stock</span>
     </label>
-    <div class="modal-footer">
+    <div class="modal-foot">
       <button class="btn-primary" onclick="saveBobine()">Enregistrer</button>
-      <button class="btn-ghost" onclick="closeBobineModal()">Annuler</button>
+      <button class="btn-secondary" onclick="closeModalBobine()">Annuler</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL ARCHIVE DETAIL -->
-<div id="modal-archive" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div id="modal-arch" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal-box wide">
-    <div class="modal-title" id="modal-archive-title">Détail du devis</div>
-    <div id="modal-archive-content"></div>
-    <button class="btn-ghost mt-16 w-full" onclick="document.getElementById('modal-archive').style.display='none'">Fermer</button>
+    <div class="modal-title" id="ma-title">Détail</div>
+    <div id="ma-content"></div>
+    <button class="btn-secondary w100 mt16" onclick="document.getElementById('modal-arch').classList.remove('open')">Fermer</button>
   </div>
 </div>
 
-<!-- FIREBASE -->
+<!-- FIREBASE SDK -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, orderBy, updateDoc }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // ════════════════════════════════════
-  //  ⚙️  REMPLACEZ PAR VOTRE CONFIG FIREBASE
-  //  Console Firebase → Paramètres → Vos apps → SDK config
-  // ════════════════════════════════════
-  const firebaseConfig = {
-    apiKey:            "AIzaSyBCKxvuxSRQ49CXk-qaEXjrPnrMMiYiZb0",
-    authDomain:        "dcalc-21210.firebaseapp.com",
-    projectId:         "dcalc-21210",
-    storageBucket:     "dcalc-21210.firebasestorage.app",
-    messagingSenderId: "643000650232",
-    appId:             "1:643000650232:web:bd3c2752f0349bfbccee0d"
+const cfg = {
+  apiKey:"AIzaSyBCKxvuxSRQ49CXk-qaEXjrPnrMMiYiZb0",
+  authDomain:"dcalc-21210.firebaseapp.com",
+  projectId:"dcalc-21210",
+  storageBucket:"dcalc-21210.firebasestorage.app",
+  messagingSenderId:"643000650232",
+  appId:"1:643000650232:web:bd3c2752f0349bfbccee0d"
+};
+
+const app  = initializeApp(cfg);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+window._A = auth;
+window._D = db;
+window._F = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+  collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, orderBy };
+
+onAuthStateChanged(auth, u => {
+  if(u){
+    showPg('app');
+    document.getElementById('user-em').textContent = u.email;
+    window._UID = u.uid;
+    loadAll();
+  } else {
+    showPg('pg-login');
+  }
+});
+</script>
+
+<script>
+/* ════════════════════════════
+   GLOBALS
+════════════════════════════ */
+let BOBS = [];   // bobines cache
+let ARCHS = [];  // archives cache
+let RESULT = null; // last computed result
+const PAL = ['#c8ff57','#ff6b35','#57c8ff','#ff57c8','#57ffb0','#ffc857','#c857ff','#ff5757'];
+
+/* ════════════════════════════
+   PAGE ROUTING
+════════════════════════════ */
+function showPg(id){
+  // auth pages
+  ['pg-login','pg-register'].forEach(p=>{
+    const el = document.getElementById(p);
+    if(el) el.className = 'auth-wrap' + (p===id?'':' hidden');
+  });
+  // app
+  const app = document.getElementById('app');
+  if(app) app.className = id==='app'?'':'hidden';
+}
+
+function goPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const pg = document.getElementById('page-'+name);
+  if(pg) pg.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-p="${name}"]`);
+  if(btn) btn.classList.add('active');
+  if(name==='accueil') renderAccueil();
+  if(name==='bobines') renderBobines();
+  if(name==='archives') renderArchives();
+  if(name==='devis') initDevis();
+}
+
+/* ════════════════════════════
+   AUTH
+════════════════════════════ */
+async function doLogin(){
+  const em = g('li-email').trim(), pw = g('li-pass');
+  const errEl = document.getElementById('login-err');
+  errEl.style.display='none';
+  if(!em||!pw){showErr('login-err','Remplis tous les champs.');return;}
+  try{
+    await window._F.signInWithEmailAndPassword(window._A, em, pw);
+  }catch(e){showErr('login-err', fbErr(e));}
+}
+
+async function doRegister(){
+  const em = g('reg-email').trim(), pw = g('reg-pass');
+  document.getElementById('reg-err').style.display='none';
+  document.getElementById('reg-ok').style.display='none';
+  if(!em||!pw){showErr('reg-err','Remplis tous les champs.');return;}
+  if(pw.length<6){showErr('reg-err','Mot de passe min. 6 caractères.');return;}
+  try{
+    await window._F.createUserWithEmailAndPassword(window._A, em, pw);
+    document.getElementById('reg-ok').textContent='Compte créé ! Connexion en cours…';
+    document.getElementById('reg-ok').style.display='block';
+  }catch(e){showErr('reg-err', fbErr(e));}
+}
+
+async function doLogout(){
+  await window._F.signOut(window._A);
+}
+
+function fbErr(e){
+  const m={
+    'auth/wrong-password':'Mot de passe incorrect.',
+    'auth/user-not-found':'Aucun compte avec cet email.',
+    'auth/email-already-in-use':'Email déjà utilisé.',
+    'auth/invalid-email':'Email invalide.',
+    'auth/invalid-credential':'Email ou mot de passe incorrect.',
+    'auth/weak-password':'Mot de passe trop faible.',
   };
+  return m[e.code]||e.message;
+}
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+/* ════════════════════════════
+   LOAD DATA
+════════════════════════════ */
+async function loadAll(){
+  document.getElementById('today').textContent = todayStr();
+  await Promise.all([loadBobs(), loadArchs()]);
+  renderAccueil();
+}
 
-  window._auth = auth;
-  window._db   = db;
-  window._fns  = {
-    createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    signOut, onAuthStateChanged,
-    collection, addDoc, getDocs, doc, setDoc,
-    deleteDoc, query, orderBy, updateDoc
-  };
+async function loadBobs(){
+  const snap = await window._F.getDocs(window._F.collection(window._D,`users/${window._UID}/bobines`));
+  BOBS = snap.docs.map(d=>({_id:d.id,...d.data()}));
+}
 
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      document.getElementById('auth-login').style.display    = 'none';
-      document.getElementById('auth-register').style.display = 'none';
-      document.getElementById('app').style.display           = 'flex';
-      document.getElementById('user-label').textContent      = user.email;
-      window._uid = user.uid;
-      loadAll();
-    } else {
-      document.getElementById('app').style.display           = 'none';
-      document.getElementById('auth-login').style.display    = 'flex';
+async function loadArchs(){
+  const q = window._F.query(
+    window._F.collection(window._D,`users/${window._UID}/archives`),
+    window._F.orderBy('date','desc')
+  );
+  const snap = await window._F.getDocs(q);
+  ARCHS = snap.docs.map(d=>({_id:d.id,...d.data()}));
+}
+
+/* ════════════════════════════
+   ACCUEIL
+════════════════════════════ */
+function renderAccueil(){
+  const rupt = BOBS.filter(b=>b.rupture).length;
+  const dispo = BOBS.length - rupt;
+  setText('s-dispo', dispo);
+  setText('s-rupt', rupt);
+  setText('s-arch', ARCHS.length);
+  const last = ARCHS[0];
+  setText('s-last', last ? last.nom : '—');
+  document.getElementById('s-rupt').style.color = rupt>0 ? 'var(--warn)' : 'var(--ok)';
+
+  const el = document.getElementById('recent');
+  if(!ARCHS.length){ el.innerHTML=`<div class="empty">Aucun devis archivé</div>`; return; }
+  el.innerHTML = ARCHS.slice(0,6).map(a=>`
+    <div class="recent-item" onclick="openArchDetail('${a._id}')">
+      <div class="r-info">
+        <div class="r-nom">${esc(a.nom)}</div>
+        <div class="r-meta">${esc(a.typeMarge||'')} · ${a.margePct}%</div>
+      </div>
+      <div class="r-date">${fmtDate(a.date)}</div>
+      <div class="r-prix">${chf(a.prixArrondi)}</div>
+    </div>`).join('');
+}
+
+/* ════════════════════════════
+   BOBINES
+════════════════════════════ */
+function renderBobines(){
+  const q = (document.getElementById('search-bob')?.value||'').toLowerCase();
+  const rows = BOBS.filter(b=>!q||JSON.stringify(b).toLowerCase().includes(q));
+  const tb = document.getElementById('bob-tbody');
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="10"><div class="empty">Aucune bobine — ajoutez-en une !</div></td></tr>`; return; }
+  tb.innerHTML = rows.map((b,i)=>{
+    const r=b.rupture;
+    return `<tr class="${r?'rupt':''}">
+      <td class="mono">${esc(b._id)}</td>
+      <td class="strong">${esc(b.marque||'')}</td>
+      <td>${esc(b.matiere||'')}</td>
+      <td><span class="cdot" style="background:${PAL[i%PAL.length]}"></span>${esc(b.couleur||'')}</td>
+      <td class="acc">${fmtN(b.prix)} CHF/kg</td>
+      <td>${esc(b.diametre||'')}</td>
+      <td>${esc(b.poids||'')}</td>
+      <td>${r?'<span class="badge b-warn">RUPTURE</span>':'<span class="badge b-ok">DISPO</span>'}</td>
+      <td>${b.lien?`<a href="${esc(b.lien)}" target="_blank" style="color:var(--accent);font-size:12px;">Commander ↗</a>`:'—'}</td>
+      <td><button class="btn-del" onclick="delBob('${esc(b._id)}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openModalBobine(){
+  ['b-id','b-marque','b-mat','b-coul','b-prix','b-lien'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('b-rupt').checked=false;
+  document.getElementById('mb-err').style.display='none';
+  document.getElementById('modal-bob').classList.add('open');
+}
+function closeModalBobine(){
+  document.getElementById('modal-bob').classList.remove('open');
+}
+
+function autoId(){
+  const m = (document.getElementById('b-marque')?.value||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  const mt = (document.getElementById('b-mat')?.value||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  const c = (document.getElementById('b-coul')?.value||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  const d = document.getElementById('b-diam')?.value==='1,75 mm'?'175':'285';
+  if(mt&&m&&c) document.getElementById('b-id').value=`${mt}-${m}-${c}-${d}`;
+}
+
+async function saveBobine(){
+  document.getElementById('mb-err').style.display='none';
+  const id=(document.getElementById('b-id')?.value||'').trim();
+  const marque=(document.getElementById('b-marque')?.value||'').trim();
+  const matiere=(document.getElementById('b-mat')?.value||'').trim();
+  const couleur=(document.getElementById('b-coul')?.value||'').trim();
+  const prix=parseFloat(document.getElementById('b-prix')?.value||0);
+  const diametre=document.getElementById('b-diam')?.value||'1,75 mm';
+  const poids=document.getElementById('b-poids')?.value||'1000 g';
+  const lien=(document.getElementById('b-lien')?.value||'').trim();
+  const rupture=document.getElementById('b-rupt')?.checked||false;
+
+  if(!id||!marque||!matiere||!couleur||isNaN(prix)||prix<=0){
+    showErr('mb-err','Marque, matière, couleur et prix sont obligatoires.');return;
+  }
+  if(BOBS.find(b=>b._id===id)){showErr('mb-err',`ID déjà existant : ${id}`);return;}
+
+  try{
+    await window._F.setDoc(window._F.doc(window._D,`users/${window._UID}/bobines`,id),
+      {id,marque,matiere,couleur,prix,diametre,poids,lien,rupture});
+    await loadBobs();
+    closeModalBobine();
+    renderBobines();
+    renderAccueil();
+    toast('Bobine ajoutée ✓');
+  }catch(e){showErr('mb-err','Erreur : '+e.message);}
+}
+
+async function delBob(id){
+  if(!confirm('Supprimer cette bobine ?')) return;
+  try{
+    await window._F.deleteDoc(window._F.doc(window._D,`users/${window._UID}/bobines`,id));
+    await loadBobs(); renderBobines(); renderAccueil(); toast('Supprimée');
+  }catch(e){alert('Erreur : '+e.message);}
+}
+
+/* ════════════════════════════
+   DEVIS / CALCUL
+════════════════════════════ */
+function initDevis(){
+  document.getElementById('fil-rows').innerHTML='';
+  document.getElementById('result-card').classList.add('hidden');
+  document.getElementById('d-err').style.display='none';
+  RESULT=null;
+  addFilRow();
+}
+
+function applyMarge(){
+  const t=document.getElementById('d-type')?.value;
+  const p={'AMI':20,'7 ART':5,'CLIENT':40,'PERSO':0};
+  if(t in p) document.getElementById('d-marge').value=p[t];
+}
+
+function addFilRow(){
+  const dispo = BOBS.filter(b=>!b.rupture);
+  const idx = document.querySelectorAll('.brow').length;
+  const rid = 'br'+idx;
+  const opts = dispo.length
+    ? '<option value="">— choisir —</option>'+dispo.map(b=>`<option value="${esc(b._id)}">${esc(b._id)} — ${esc(b.marque)} ${esc(b.matiere)} ${esc(b.couleur)} (${fmtN(b.prix)} CHF/kg)</option>`).join('')
+    : '<option value="">Aucune bobine disponible</option>';
+  const html=`<div class="brow" id="${rid}">
+    <div><div class="brow-lbl">Bobine</div><select class="field bsel">${opts}</select></div>
+    <div><div class="brow-lbl">Grammes</div><input class="field bg" type="number" step="0.5" min="0" placeholder="ex: 70"/></div>
+    <button class="btn-rmv" onclick="document.getElementById('${rid}').remove()">✕</button>
+  </div>`;
+  document.getElementById('fil-rows').insertAdjacentHTML('beforeend',html);
+}
+
+function calcDevis(){
+  const errEl=document.getElementById('d-err');
+  errEl.style.display='none';
+  document.getElementById('result-card').classList.add('hidden');
+
+  const nom=(document.getElementById('d-nom')?.value||'').trim();
+  const client=(document.getElementById('d-client')?.value||'').trim();
+  const typeMarge=document.getElementById('d-type')?.value||'AMI';
+  const margePct=parseFloat(document.getElementById('d-marge')?.value)||0;
+  const temps=parseFloat(document.getElementById('d-temps')?.value)||0;
+  const watts=parseFloat(document.getElementById('d-w')?.value)||100;
+  const kwh=parseFloat(document.getElementById('d-kwh')?.value)||0.33;
+  const fichier=parseFloat(document.getElementById('d-fich')?.value)||0;
+  const amorti=parseInt(document.getElementById('d-amort')?.value)||1;
+  const dh=parseFloat(document.getElementById('d-dh')?.value)||0;
+  const dr=parseFloat(document.getElementById('d-dr')?.value)||0;
+
+  if(!nom){showErrDiv('d-err','Nom du projet obligatoire.');return;}
+  if(temps<=0){showErrDiv('d-err','Temps d\'impression obligatoire (>0).');return;}
+
+  const items=[];
+  document.querySelectorAll('.brow').forEach(row=>{
+    const id=(row.querySelector('.bsel')?.value||'').trim();
+    const gr=parseFloat(row.querySelector('.bg')?.value||0);
+    if(id&&gr>0){
+      const bob=BOBS.find(b=>b._id===id);
+      if(bob) items.push({id,g:gr,priceKg:parseFloat(bob.prix)});
     }
   });
+  if(!items.length){showErrDiv('d-err','Ajoute au moins un filament avec des grammes.');return;}
+
+  // CALCUL
+  const costElec=r2((watts/1000)*temps*kwh);
+  const fichAmorti=r2(fichier/Math.max(amorti,1));
+  const designCost=r2(dh*dr);
+  let totalFil=0;
+  const itemsOut=items.map(it=>{
+    const cost=r2((it.g/1000)*it.priceKg);
+    totalFil+=cost;
+    return{...it,cost};
+  });
+  totalFil=r2(totalFil);
+  const totalCost=r2(costElec+fichAmorti+designCost+totalFil);
+  const avecMarge=r2(totalCost*(1+margePct/100));
+  const prixArrondi=ceil10(avecMarge);
+
+  RESULT={nom,client,typeMarge,margePct,temps,watts,kwh,costElec,fichier,amorti,fichAmorti,dh,dr,designCost,items:itemsOut,totalFil,totalCost,avecMarge,prixArrondi,date:Date.now()};
+
+  // AFFICHER
+  setText('r-elec', chf(costElec));
+  setText('r-fich', chf(fichAmorti));
+  setText('r-design', chf(designCost));
+  setText('r-fil', chf(totalFil));
+  setText('r-total', chf(totalCost));
+  setText('r-mpct', typeMarge+' '+margePct+'%');
+  setText('r-marge', chf(avecMarge));
+  setText('r-arrondi', chf(prixArrondi));
+  document.getElementById('r-items').innerHTML=itemsOut.map((it,i)=>`
+    <div class="iline">
+      <span class="iid">${esc(it.id)}</span>
+      <span>${it.g} g · ${fmtN(it.priceKg)} CHF/kg</span>
+      <span class="iacc">${chf(it.cost)}</span>
+    </div>`).join('');
+  document.getElementById('arch-msg').style.display='none';
+  document.getElementById('arch-err').style.display='none';
+  document.getElementById('result-card').classList.remove('hidden');
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function archiverDevis(){
+  if(!RESULT) return;
+  document.getElementById('arch-msg').style.display='none';
+  document.getElementById('arch-err').style.display='none';
+  try{
+    await window._F.addDoc(window._F.collection(window._D,`users/${window._UID}/archives`),{...RESULT});
+    await loadArchs();
+    document.getElementById('arch-msg').textContent='✓ Archivé avec succès !';
+    document.getElementById('arch-msg').style.display='block';
+    toast('Archivé ✓');
+  }catch(e){
+    document.getElementById('arch-err').textContent='Erreur : '+e.message;
+    document.getElementById('arch-err').style.display='block';
+  }
+}
+
+/* ════════════════════════════
+   ARCHIVES
+════════════════════════════ */
+function renderArchives(){
+  const q=(document.getElementById('search-arch')?.value||'').toLowerCase();
+  const rows=ARCHS.filter(a=>!q||(a.nom||'').toLowerCase().includes(q)||(a.client||'').toLowerCase().includes(q));
+  const tb=document.getElementById('arch-tbody');
+  if(!rows.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty">Aucune archive</div></td></tr>`;return;}
+  tb.innerHTML=rows.map(a=>{
+    const dots=(a.items||[]).map((it,i)=>`<span class="cdot" style="background:${PAL[i%PAL.length]}" title="${esc(it.id)}"></span>`).join('');
+    const badge=badgeMarge(a.typeMarge);
+    return `<tr style="cursor:pointer" onclick="openArchDetail('${a._id}')">
+      <td class="mono">${fmtDate(a.date)}</td>
+      <td class="strong">${esc(a.nom)}</td>
+      <td>${esc(a.client||'—')}</td>
+      <td>${badge} ${a.margePct}%</td>
+      <td class="mono">${a.temps?a.temps+'h':'—'}</td>
+      <td>${dots||'—'}</td>
+      <td class="mono">${chf(a.totalCost)}</td>
+      <td class="acc">${chf(a.prixArrondi)}</td>
+      <td><button class="btn-del" onclick="event.stopPropagation();delArch('${a._id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openArchDetail(id){
+  const a=ARCHS.find(x=>x._id===id);
+  if(!a) return;
+  document.getElementById('ma-title').textContent=a.nom;
+  document.getElementById('ma-content').innerHTML=`
+    <div class="dgrid">
+      <div class="ditem"><div class="dkey">Date</div><div class="dval mono">${fmtDate(a.date)}</div></div>
+      <div class="ditem"><div class="dkey">Client</div><div class="dval">${esc(a.client||'—')}</div></div>
+      <div class="ditem"><div class="dkey">Marge</div><div class="dval">${esc(a.typeMarge)} — ${a.margePct}%</div></div>
+      <div class="ditem"><div class="dkey">Temps impression</div><div class="dval mono">${a.temps?a.temps+' h':'—'}</div></div>
+      <div class="ditem"><div class="dkey">Coût électricité</div><div class="dval mono">${chf(a.costElec)}</div></div>
+      <div class="ditem"><div class="dkey">Fichier amorti</div><div class="dval mono">${chf(a.fichAmorti)}</div></div>
+      ${(a.designCost>0)?`<div class="ditem"><div class="dkey">Création 3D</div><div class="dval mono">${chf(a.designCost)}</div></div>`:''}
+      <div class="ditem"><div class="dkey">Coût total</div><div class="dval mono">${chf(a.totalCost)}</div></div>
+    </div>
+    <div class="card-title">Filaments</div>
+    <div class="flist">
+      ${(a.items||[]).map((it,i)=>`<div class="fitem">
+        <span><span class="cdot" style="background:${PAL[i%PAL.length]}"></span><span class="fid">${esc(it.id)}</span></span>
+        <span>${it.g} g · ${fmtN(it.priceKg)} CHF/kg</span>
+        <span class="facc">${chf(it.cost)}</span>
+      </div>`).join('')}
+    </div>
+    <div class="ditem" style="border:1px solid rgba(200,255,87,.2);border-radius:10px;padding:14px;margin-top:8px">
+      <div class="dkey">Prix arrondi final</div>
+      <div class="dval big">${chf(a.prixArrondi)}</div>
+    </div>`;
+  document.getElementById('modal-arch').classList.add('open');
+}
+
+async function delArch(id){
+  if(!confirm('Supprimer cette archive ?')) return;
+  try{
+    await window._F.deleteDoc(window._F.doc(window._D,`users/${window._UID}/archives`,id));
+    await loadArchs(); renderArchives(); renderAccueil(); toast('Archive supprimée');
+  }catch(e){alert('Erreur : '+e.message);}
+}
+
+/* ════════════════════════════
+   HELPERS
+════════════════════════════ */
+function g(id){return(document.getElementById(id)?.value||'').trim();}
+function setText(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function chf(n){return(parseFloat(n)||0).toFixed(2)+' CHF';}
+function fmtN(n){return(parseFloat(n)||0).toFixed(2);}
+function r2(n){return Math.round((parseFloat(n)||0)*100)/100;}
+function ceil10(n){return Math.ceil((parseFloat(n)||0)*10)/10;}
+function fmtDate(ts){
+  if(!ts)return'—';
+  const d=new Date(typeof ts==='object'&&ts.toDate?ts.toDate():ts);
+  return d.toLocaleDateString('fr-CH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function todayStr(){return new Date().toLocaleDateString('fr-CH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+function badgeMarge(t){const m={'AMI':'b-ami','CLIENT':'b-warn','7 ART':'b-ok','7ART':'b-ok'};return`<span class="badge ${m[t]||'b-gray'}">${esc(t)}</span>`;}
+function showErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';}}
+function showErrDiv(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';}}
+function toast(msg){
+  const t=document.createElement('div');
+  t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2800);
+}
 </script>
-<script src="js/app.js"></script>
 </body>
 </html>
