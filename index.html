@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3DCalc — Calculateur Impression 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="auth-login" class="auth-screen">
+  <div class="auth-bg"><div class="auth-grid"></div></div>
+  <div class="auth-card">
+    <div class="logo">
+      <div class="logo-hex">3D</div>
+      <span class="logo-text">3D<em>Calc</em></span>
+    </div>
+    <p class="auth-subtitle">Calculateur Impression 3D</p>
+    <div id="login-msg" style="display:none"></div>
+    <input type="email" id="login-email" class="field" placeholder="Email"/>
+    <input type="password" id="login-password" class="field" placeholder="Mot de passe"/>
+    <button class="btn-primary" style="width:100%;padding:12px;" onclick="login()">Connexion →</button>
+    <button class="btn-ghost" onclick="showRegister()">Créer un compte</button>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div id="auth-register" class="auth-screen" style="display:none">
+  <div class="auth-bg"><div class="auth-grid"></div></div>
+  <div class="auth-card">
+    <div class="logo">
+      <div class="logo-hex">3D</div>
+      <span class="logo-text">3D<em>Calc</em></span>
+    </div>
+    <p class="auth-subtitle">Créer un compte</p>
+    <div id="reg-msg" style="display:none"></div>
+    <input type="email" id="reg-email" class="field" placeholder="Email"/>
+    <input type="password" id="reg-password" class="field" placeholder="Mot de passe (min. 6 caractères)"/>
+    <button class="btn-primary" style="width:100%;padding:12px;" onclick="register()">Créer le compte →</button>
+    <button class="btn-ghost" onclick="showLogin()">← Retour connexion</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-hex">3D</div>
+      <span class="logo-text">3D<em>Calc</em></span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link active" data-page="accueil" onclick="showPage('accueil')">
+        <span class="nav-ic">◈</span>Accueil
+      </button>
+      <button class="nav-link" data-page="devis" onclick="showPage('devis')">
+        <span class="nav-ic">✦</span>Nouveau devis
+      </button>
+      <button class="nav-link" data-page="bobines" onclick="showPage('bobines')">
+        <span class="nav-ic">◎</span>Bobines
+      </button>
+      <button class="nav-link" data-page="archives" onclick="showPage('archives')">
+        <span class="nav-ic">▤</span>Archives
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <span class="user-label" id="user-label"></span>
+      <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    </div>
+  </nav>
+
+  <main class="content">
+
+    <!-- ACCUEIL -->
+    <div id="page-accueil" class="page active">
+      <div class="page-header">
+        <h1>Tableau de bord</h1>
+        <span class="date-badge" id="today-date"></span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card ok">
+          <div class="stat-label">Bobines disponibles</div>
+          <div class="stat-value" id="stat-bobines">—</div>
+        </div>
+        <div class="stat-card warn">
+          <div class="stat-label">En rupture</div>
+          <div class="stat-value" id="stat-rupture">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Devis archivés</div>
+          <div class="stat-value" id="stat-archives">—</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="stat-label">Dernier devis</div>
+          <div class="stat-value sm" id="stat-last">—</div>
+        </div>
+      </div>
+      <p class="section-title">Actions rapides</p>
+      <div class="actions-grid">
+        <button class="action-card" onclick="showPage('devis')">
+          <span class="action-icon">✦</span>
+          <span class="action-label">Nouveau calcul</span>
+        </button>
+        <button class="action-card" onclick="showPage('bobines');setTimeout(openBobineModal,150)">
+          <span class="action-icon">＋</span>
+          <span class="action-label">Ajouter une bobine</span>
+        </button>
+        <button class="action-card" onclick="showPage('bobines')">
+          <span class="action-icon">◎</span>
+          <span class="action-label">Voir les bobines</span>
+        </button>
+        <button class="action-card" onclick="showPage('archives')">
+          <span class="action-icon">▤</span>
+          <span class="action-label">Voir les archives</span>
+        </button>
+      </div>
+      <p class="section-title">Derniers devis</p>
+      <div id="recent-list"></div>
+    </div>
+
+    <!-- DEVIS -->
+    <div id="page-devis" class="page">
+      <div class="page-header">
+        <h1>Nouveau devis</h1>
+        <button class="btn-primary" onclick="calculerDevis()">Calculer →</button>
+      </div>
+      <div class="devis-grid">
+        <div class="card">
+          <div class="card-title">Informations générales</div>
+          <label class="form-label">Nom du projet *</label>
+          <input id="d-nom" class="field" placeholder="ex: Boîte à outils vélo"/>
+          <label class="form-label">Client / Destinataire</label>
+          <input id="d-client" class="field" placeholder="ex: AMI, 7 ART, Benjamin…"/>
+          <label class="form-label">Type de marge</label>
+          <select id="d-type-marge" class="field" onchange="applyMargePreset()">
+            <option value="AMI">AMI — Amical (20%)</option>
+            <option value="7 ART">7 ART — Artistique (5%)</option>
+            <option value="CLIENT">CLIENT — Standard (40%)</option>
+            <option value="PERSO">PERSO — Personnel</option>
+          </select>
+          <label class="form-label">Marge (%)</label>
+          <input id="d-marge" class="field" type="number" value="20" min="0" max="500"/>
+          <p class="form-hint">Modifiable manuellement si besoin</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Paramètres d'impression</div>
+          <label class="form-label">Temps d'impression (h) *</label>
+          <input id="d-temps" class="field" type="number" step="0.1" placeholder="ex: 6.3"/>
+          <p class="form-hint">6.3 = 6h18 min</p>
+          <div class="form-row" style="margin-top:0">
+            <div>
+              <label class="form-label">Consommation (W)</label>
+              <input id="d-watts" class="field" type="number" value="100"/>
+            </div>
+            <div>
+              <label class="form-label">Prix élec. (CHF/kWh)</label>
+              <input id="d-elec" class="field" type="number" step="0.01" value="0.33"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label class="form-label">Prix fichier 3D (CHF)</label>
+              <input id="d-fichier" class="field" type="number" step="0.5" value="0"/>
+            </div>
+            <div>
+              <label class="form-label">Amorti sur (n) impressions</label>
+              <input id="d-amorti" class="field" type="number" value="1" min="1"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label class="form-label">Création 3D (h)</label>
+              <input id="d-design-h" class="field" type="number" step="0.1" value="0"/>
+            </div>
+            <div>
+              <label class="form-label">Tarif création (CHF/h)</label>
+              <input id="d-design-rate" class="field" type="number" step="1" value="0"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="card-title" style="margin:0">Filaments utilisés</div>
+          <button class="btn-secondary" onclick="addBobineRow()">+ Ajouter un filament</button>
+        </div>
+        <div id="devis-bobines-list"></div>
+        <p class="form-hint mt-8">Les bobines en rupture de stock ne sont pas proposées.</p>
+      </div>
+
+      <div id="devis-msg" style="display:none;margin-bottom:12px"></div>
+
+      <div class="card result-card hidden" id="result-card">
+        <div class="card-title">Résultat du calcul</div>
+        <div class="result-rows">
+          <div class="result-row">
+            <span>Coût électricité</span>
+            <span class="result-val" id="r-elec">—</span>
+          </div>
+          <div class="result-row">
+            <span>Coût fichier 3D (amorti)</span>
+            <span class="result-val" id="r-fichier">—</span>
+          </div>
+          <div class="result-row">
+            <span>Coût création 3D</span>
+            <span class="result-val" id="r-design">—</span>
+          </div>
+          <div class="result-row">
+            <span>Total filament</span>
+            <span class="result-val" id="r-filament">—</span>
+          </div>
+          <div class="result-row strong">
+            <span>Coût total brut</span>
+            <span class="result-val" id="r-total">—</span>
+          </div>
+          <div class="result-row">
+            <span>Prix + marge (<span id="r-marge-pct">—</span>)</span>
+            <span class="result-val" id="r-marge">—</span>
+          </div>
+          <div class="result-row final">
+            <span class="result-label-big">Prix arrondi (↑ 0.10 CHF)</span>
+            <span class="result-final-val" id="r-arrondi">—</span>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <p class="card-title">Détail filaments</p>
+          <div class="items-detail" id="r-items"></div>
+        </div>
+        <div id="archive-msg" style="display:none;margin-top:12px"></div>
+        <button class="btn-primary mt-16" style="width:100%" onclick="archiverDevis()">
+          💾 Archiver ce devis
+        </button>
+      </div>
+    </div>
+
+    <!-- BOBINES -->
+    <div id="page-bobines" class="page">
+      <div class="page-header">
+        <h1>Bobines de filament</h1>
+        <button class="btn-primary" onclick="openBobineModal()">+ Ajouter</button>
+      </div>
+      <input id="search-bobines" class="field search-bar" placeholder="🔎 Rechercher (ID, marque, couleur…)" oninput="renderBobines()"/>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Marque</th><th>Matière</th><th>Couleur</th>
+              <th>Prix/kg</th><th>Diam.</th><th>Poids</th><th>Statut</th><th>Lien</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="bobines-tbody">
+            <tr><td colspan="10"><div class="empty-state"><div class="empty-icon">◎</div>Chargement…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ARCHIVES -->
+    <div id="page-archives" class="page">
+      <div class="page-header">
+        <h1>Archives des devis</h1>
+      </div>
+      <input id="search-archives" class="field search-bar" placeholder="🔎 Rechercher un devis…" oninput="renderArchives()"/>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Nom</th><th>Client</th><th>Marge</th>
+              <th>Temps</th><th>Filaments</th><th>Coût total</th><th>Prix final</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="archives-tbody">
+            <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">▤</div>Chargement…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL BOBINE -->
+<div id="modal-bobine" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeBobineModal()">
+  <div class="modal-box">
+    <div class="modal-title">+ Nouvelle bobine</div>
+    <div id="modal-bobine-msg" style="display:none;margin-bottom:12px"></div>
+    <label class="form-label">ID unique *</label>
+    <input id="b-id" class="field" placeholder="Généré automatiquement"/>
+    <p class="form-hint">Généré depuis Matière-Marque-Couleur-Diam. Modifiable.</p>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Marque *</label>
+        <input id="b-marque" class="field" placeholder="Creality" oninput="autoIdBobine()"/>
+      </div>
+      <div>
+        <label class="form-label">Matière *</label>
+        <input id="b-matiere" class="field" placeholder="PLA" oninput="autoIdBobine()"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Couleur *</label>
+        <input id="b-couleur" class="field" placeholder="Noir" oninput="autoIdBobine()"/>
+      </div>
+      <div>
+        <label class="form-label">Prix (CHF/kg) *</label>
+        <input id="b-prix" class="field" type="number" step="0.1" placeholder="19.90"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Diamètre</label>
+        <select id="b-diam" class="field" onchange="autoIdBobine()">
+          <option>1,75 mm</option>
+          <option>2,85 mm</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Poids bobine</label>
+        <select id="b-poids" class="field">
+          <option>1000 g</option>
+          <option>750 g</option>
+          <option>500 g</option>
+          <option>250 g</option>
+        </select>
+      </div>
+    </div>
+    <label class="form-label">Lien commande (optionnel)</label>
+    <input id="b-lien" class="field" placeholder="https://galaxus.ch/…"/>
+    <label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:14px">
+      <input type="checkbox" id="b-rupture" style="width:16px;height:16px;accent-color:var(--warn)"/>
+      <span>En rupture de stock</span>
+    </label>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="saveBobine()">Enregistrer</button>
+      <button class="btn-ghost" onclick="closeBobineModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ARCHIVE DETAIL -->
+<div id="modal-archive" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box wide">
+    <div class="modal-title" id="modal-archive-title">Détail du devis</div>
+    <div id="modal-archive-content"></div>
+    <button class="btn-ghost mt-16 w-full" onclick="document.getElementById('modal-archive').style.display='none'">Fermer</button>
+  </div>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, orderBy, updateDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ════════════════════════════════════
+  //  ⚙️  REMPLACEZ PAR VOTRE CONFIG FIREBASE
+  //  Console Firebase → Paramètres → Vos apps → SDK config
+  // ════════════════════════════════════
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBCKxvuxSRQ49CXk-qaEXjrPnrMMiYiZb0",
+    authDomain:        "dcalc-21210.firebaseapp.com",
+    projectId:         "dcalc-21210",
+    storageBucket:     "dcalc-21210.firebasestorage.app",
+    messagingSenderId: "643000650232",
+    appId:             "1:643000650232:web:bd3c2752f0349bfbccee0d"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  window._auth = auth;
+  window._db   = db;
+  window._fns  = {
+    createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, onAuthStateChanged,
+    collection, addDoc, getDocs, doc, setDoc,
+    deleteDoc, query, orderBy, updateDoc
+  };
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      document.getElementById('auth-login').style.display    = 'none';
+      document.getElementById('auth-register').style.display = 'none';
+      document.getElementById('app').style.display           = 'flex';
+      document.getElementById('user-label').textContent      = user.email;
+      window._uid = user.uid;
+      loadAll();
+    } else {
+      document.getElementById('app').style.display           = 'none';
+      document.getElementById('auth-login').style.display    = 'flex';
+    }
+  });
+</script>
+<script src="js/app.js"></script>
+</body>
+</html>
