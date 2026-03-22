@@ -109,6 +109,9 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
 .btn-primary:hover{background:#b8ef47;}
 .btn-secondary{background:transparent;color:#d0ccc4;border:1px solid var(--border2);border-radius:var(--r);padding:9px 18px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-secondary:hover{color:#ffffff;border-color:rgba(255,255,255,.4);}
+.sort-btn{background:var(--bg3);color:#b0aca4;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .15s;}
+.sort-btn:hover{border-color:var(--accent);color:var(--accent);}
+.sort-btn.active{background:rgba(200,255,87,.1);border-color:rgba(200,255,87,.4);color:var(--accent);}
 .btn-del{background:transparent;color:#a0a09a;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;}
 .btn-del:hover{border-color:var(--warn);color:var(--warn);}
 /* toggle rupture inline */
@@ -335,6 +338,14 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
       <div id="page-bobines" class="page">
         <div class="page-hdr"><h1>Bobines de filament</h1><button class="btn-primary" onclick="openModalBobine()">+ Ajouter</button></div>
         <input id="search-bob" class="field search-input" placeholder="🔎 Rechercher…" oninput="renderBobines()"/>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:11px;color:#a0a09a;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;align-self:center">Trier par</span>
+          <button id="sort-marque" class="sort-btn active" onclick="setSortBob('marque')">Marque</button>
+          <button id="sort-matiere" class="sort-btn" onclick="setSortBob('matiere')">Matière</button>
+          <button id="sort-couleur" class="sort-btn" onclick="setSortBob('couleur')">Couleur</button>
+          <button id="sort-prix" class="sort-btn" onclick="setSortBob('prix')">Prix</button>
+          <button id="sort-statut" class="sort-btn" onclick="setSortBob('statut')">Statut</button>
+        </div>
         <div class="table-wrap">
           <table class="dtable">
             <thead><tr><th>ID</th><th>Marque</th><th>Matière</th><th>Couleur</th><th>Prix/kg</th><th>Diam.</th><th>Poids</th><th>Statut</th><th>Lien</th><th></th></tr></thead>
@@ -554,6 +565,12 @@ function renderAccueil(){
 function renderBobines(){
   var q=(document.getElementById('search-bob').value||'').toLowerCase();
   var rows=BOBS.filter(function(b){return !q||JSON.stringify(b).toLowerCase().includes(q);});
+  rows=rows.slice().sort(function(a,b){
+    if(BOB_SORT==='prix') return (parseFloat(a.prix)||0)-(parseFloat(b.prix)||0);
+    if(BOB_SORT==='statut') return (a.rupture?1:0)-(b.rupture?1:0);
+    var va=String(a[BOB_SORT]||'').toLowerCase(), vb=String(b[BOB_SORT]||'').toLowerCase();
+    return va<vb?-1:va>vb?1:0;
+  });
   var tb=document.getElementById('bob-tbody');
   if(!rows.length){tb.innerHTML='<tr><td colspan="10"><div class="empty">Aucune bobine</div></td></tr>';return;}
   tb.innerHTML=rows.map(function(b){
@@ -894,6 +911,15 @@ function genPDF(){
 
 /* ── COMMANDES ── */
 var CMDS = [];
+var BOB_SORT = 'marque';
+
+function setSortBob(field){
+  BOB_SORT = field;
+  document.querySelectorAll('.sort-btn').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('sort-'+field);
+  if(btn) btn.classList.add('active');
+  renderBobines();
+}
 
 function loadCmds(){
   return DB.collection('users/'+window._UID+'/commandes').orderBy('date','desc').get().then(function(snap){
