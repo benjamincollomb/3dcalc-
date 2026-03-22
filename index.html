@@ -235,6 +235,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
         <button class="nav-btn active" data-p="accueil" onclick="goPage('accueil')"><span class="nav-ic">◈</span>Accueil</button>
         <button class="nav-btn" data-p="devis" onclick="goPage('devis')"><span class="nav-ic">✦</span>Nouveau devis</button>
         <button class="nav-btn" data-p="bobines" onclick="goPage('bobines')"><span class="nav-ic">◎</span>Bobines</button>
+        <button class="nav-btn" data-p="commandes" onclick="goPage('commandes')"><span class="nav-ic">⬡</span>Commandes <span id="badge-cmd" style="margin-left:auto;background:var(--warn);color:#000;border-radius:10px;font-size:10px;font-weight:700;padding:1px 7px;display:none"></span></button>
         <button class="nav-btn" data-p="archives" onclick="goPage('archives')"><span class="nav-ic">▤</span>Archives</button>
       </div>
       <div class="sidebar-bottom">
@@ -325,6 +326,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
           <div id="arch-err" class="msg-error mt8"></div>
           <div style="display:flex;gap:10px;margin-top:14px;">
             <button class="btn-primary" style="flex:1" onclick="archiverDevis()">💾 Archiver</button>
+            <button class="btn-primary" style="flex:1;background:var(--warn);color:#000" onclick="ajouterCommande()">📋 Commander</button>
             <button class="pdf-type-btn devis" style="flex:1" onclick="openPdfModal('DEVIS')">📄 Devis PDF</button>
             <button class="pdf-type-btn facture" style="flex:1" onclick="openPdfModal('FACTURE')">🧾 Facture PDF</button>
           </div>
@@ -350,6 +352,30 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
             <thead><tr><th>Date</th><th>Nom</th><th>Client</th><th>Pièces</th><th>Temps</th><th>Filaments</th><th>Prix/pièce</th><th>Prix total</th><th></th></tr></thead>
             <tbody id="arch-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    <!-- COMMANDES -->
+      <div id="page-commandes" class="page">
+        <div class="page-hdr">
+          <h1>Commandes</h1>
+        </div>
+        <!-- Tabs -->
+        <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)">
+          <button class="cmd-tab active" onclick="switchCmdTab('attente')" id="tab-attente" style="padding:10px 20px;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:1px">En attente</button>
+          <button class="cmd-tab" onclick="switchCmdTab('cours')" id="tab-cours" style="padding:10px 20px;background:none;border:none;border-bottom:2px solid transparent;color:#888;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:1px">En cours</button>
+          <button class="cmd-tab" onclick="switchCmdTab('historique')" id="tab-historique" style="padding:10px 20px;background:none;border:none;border-bottom:2px solid transparent;color:#888;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:1px">Historique</button>
+        </div>
+        <!-- En attente -->
+        <div id="cmd-attente">
+          <div id="cmd-attente-list"></div>
+        </div>
+        <!-- En cours -->
+        <div id="cmd-cours" style="display:none">
+          <div id="cmd-cours-list"></div>
+        </div>
+        <!-- Historique -->
+        <div id="cmd-historique" style="display:none">
+          <div id="cmd-historique-list"></div>
         </div>
       </div>
     </main>
@@ -487,11 +513,12 @@ function goPage(name){
   if(name==='bobines')renderBobines();
   if(name==='archives')renderArchives();
   if(name==='devis')initDevis();
+  if(name==='commandes'){renderCommandes();}
 }
 
 /* ── DATA ── */
 function loadAll(){
-  loadBobs().then(function(){loadArchs().then(function(){renderAccueil();});});
+  loadBobs().then(function(){loadArchs().then(function(){loadCmds().then(function(){renderAccueil();});});});
 }
 function loadBobs(){
   return DB.collection('users/'+window._UID+'/bobines').get().then(function(snap){
@@ -864,6 +891,122 @@ function genPDF(){
   doc.save(fname);
   document.getElementById('modal-pdf').classList.remove('open');
   toast('PDF téléchargé ✓');
+}
+
+/* ── COMMANDES ── */
+var CMDS = [];
+
+function loadCmds(){
+  return DB.collection('users/'+window._UID+'/commandes').orderBy('date','desc').get().then(function(snap){
+    CMDS = snap.docs.map(function(d){return Object.assign({_id:d.id},d.data());});
+    updateBadgeCmds();
+  });
+}
+
+function updateBadgeCmds(){
+  var actives = CMDS.filter(function(x){return x.statut!=='termine';}).length;
+  var badge = document.getElementById('badge-cmd');
+  if(badge){ badge.textContent=actives; badge.style.display=actives>0?'inline':'none'; }
+}
+
+function ajouterCommande(){
+  if(!RESULT){alert('Calcule un devis d'abord.');return;}
+  var note = prompt('Note pour la commande (optionnel) :', '');
+  if(note===null)return;
+  var data = {
+    nom: RESULT.nom, client: RESULT.client||'', pieces: RESULT.pieces||1,
+    prixArrondi: RESULT.prixArrondi, prixTotal: RESULT.prixTotal,
+    temps: RESULT.temps, items: RESULT.items||[],
+    note: note, statut: 'attente', date: Date.now(), dateMaj: Date.now()
+  };
+  DB.collection('users/'+window._UID+'/commandes').add(data).then(function(){
+    loadCmds().then(function(){ toast('Ajouté aux commandes ✓'); });
+  }).catch(function(e){alert('Erreur : '+e.message);});
+}
+
+function ajouterCommandeFromArch(id){
+  var a = ARCHS.find(function(x){return x._id===id;}); if(!a)return;
+  var note = prompt('Note pour la commande (optionnel) :', '');
+  if(note===null)return;
+  var data = {
+    nom: a.nom, client: a.client||'', pieces: a.pieces||1,
+    prixArrondi: a.prixArrondi, prixTotal: a.prixTotal||r2((a.prixArrondi||0)*(a.pieces||1)),
+    temps: a.temps, items: a.items||[],
+    note: note, statut: 'attente', date: Date.now(), dateMaj: Date.now()
+  };
+  DB.collection('users/'+window._UID+'/commandes').add(data).then(function(){
+    loadCmds().then(function(){ document.getElementById('modal-arch').classList.remove('open'); toast('Ajouté aux commandes ✓'); });
+  }).catch(function(e){alert('Erreur : '+e.message);});
+}
+
+function switchCmdTab(tab){
+  ['attente','cours','historique'].forEach(function(t){
+    document.getElementById('cmd-'+t).style.display = t===tab ? 'block' : 'none';
+    var btn = document.getElementById('tab-'+t);
+    if(btn){
+      btn.style.color = t===tab ? 'var(--accent)' : '#888';
+      btn.style.borderBottomColor = t===tab ? 'var(--accent)' : 'transparent';
+    }
+  });
+}
+
+function renderCommandes(){
+  var attente  = CMDS.filter(function(x){return x.statut==='attente';});
+  var cours    = CMDS.filter(function(x){return x.statut==='cours';});
+  var termine  = CMDS.filter(function(x){return x.statut==='termine';});
+  renderCmdList('cmd-attente-list', attente, 'attente');
+  renderCmdList('cmd-cours-list', cours, 'cours');
+  renderCmdList('cmd-historique-list', termine, 'termine');
+}
+
+function renderCmdList(elId, list, statut){
+  var el = document.getElementById(elId); if(!el)return;
+  if(!list.length){
+    el.innerHTML='<div class="empty">'+(statut==='termine'?'Aucune commande terminée':'Aucune commande ici')+'</div>';
+    return;
+  }
+  el.innerHTML = list.map(function(cmd){
+    var fills = (cmd.items||[]).map(function(it){return esc(it.couleur||it.id);}).join(', ');
+    var btns='';
+    if(statut==='attente') btns='<button class="toggle-rupt" style="border-color:rgba(255,165,0,.4);color:orange" onclick="changerStatutCmd(''+cmd._id+'','cours')">▶ Démarrer</button>';
+    if(statut==='cours')   btns='<button class="toggle-rupt" style="border-color:rgba(87,255,154,.4);color:#57ff9a" onclick="changerStatutCmd(''+cmd._id+'','termine')">✓ Terminer</button>';
+    var badge = statut==='attente'?'<span class="badge b-warn">ATTENTE</span>':statut==='cours'?'<span class="badge" style="background:rgba(255,165,0,.15);color:orange;border:1px solid rgba(255,165,0,.3)">EN COURS</span>':'<span class="badge b-ok">TERMINÉ</span>';
+    return '<div class="card" style="margin-bottom:10px">'
+      +'<div class="flex-between" style="margin-bottom:10px">'
+        +'<div>'
+          +'<div style="font-size:15px;font-weight:600;color:#fff">'+esc(cmd.nom)+'</div>'
+          +'<div style="font-size:12px;color:#a0a09a;margin-top:3px">'+esc(cmd.client||'—')+' · '+fmtDate(cmd.date)+'</div>'
+        +'</div>'
+        +badge
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">'
+        +'<div class="ditem"><div class="dkey">Pièces</div><div class="dval mono">'+(cmd.pieces||1)+'</div></div>'
+        +'<div class="ditem"><div class="dkey">Prix/pièce</div><div class="dval mono">'+chf(cmd.prixArrondi)+'</div></div>'
+        +'<div class="ditem"><div class="dkey">Total</div><div class="dval mono" style="color:var(--accent)">'+chf(cmd.prixTotal||r2((cmd.prixArrondi||0)*(cmd.pieces||1)))+'</div></div>'
+      +'</div>'
+      +(fills?'<div style="font-size:12px;color:#a0a09a;margin-bottom:10px">Filaments : '+fills+'</div>':'')
+      +(cmd.note?'<div style="font-size:12px;color:#c8c4bc;background:var(--bg3);border-radius:6px;padding:8px 10px;margin-bottom:10px">📝 '+esc(cmd.note)+'</div>':'')
+      +'<div style="display:flex;gap:8px">'
+        +btns
+        +'<button class="btn-del" onclick="delCmd(''+cmd._id+'')">Supprimer</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function changerStatutCmd(id, newStatut){
+  var msg = newStatut==='cours'?'Démarrer cette commande ?':'Marquer comme terminée ?';
+  if(!confirm(msg))return;
+  DB.collection('users/'+window._UID+'/commandes').doc(id).update({statut:newStatut,dateMaj:Date.now()})
+    .then(function(){ loadCmds().then(function(){ renderCommandes(); toast(newStatut==='cours'?'Commande démarrée':'Commande terminée ✓'); }); })
+    .catch(function(e){alert('Erreur : '+e.message);});
+}
+
+function delCmd(id){
+  if(!confirm('Supprimer cette commande ?'))return;
+  DB.collection('users/'+window._UID+'/commandes').doc(id).delete()
+    .then(function(){ loadCmds().then(function(){ renderCommandes(); toast('Supprimée'); }); })
+    .catch(function(e){alert('Erreur : '+e.message);});
 }
 
 /* ── EDIT PRIX ── */
