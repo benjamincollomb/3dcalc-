@@ -239,6 +239,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
         <button class="nav-btn active" data-p="accueil" onclick="goPage('accueil')"><span class="nav-ic">◈</span>Accueil</button>
         <button class="nav-btn" data-p="devis" onclick="goPage('devis')"><span class="nav-ic">✦</span>Nouveau devis</button>
         <button class="nav-btn" data-p="bobines" onclick="goPage('bobines')"><span class="nav-ic">◎</span>Bobines</button>
+        <button class="nav-btn" data-p="achat" onclick="goPage('achat')"><span class="nav-ic">🛒</span>Achat bobines</button>
         <button class="nav-btn" data-p="commandes" onclick="goPage('commandes')"><span class="nav-ic">⬡</span>Commandes <span id="badge-cmd" style="margin-left:auto;background:var(--warn);color:#000;border-radius:10px;font-size:10px;font-weight:700;padding:1px 7px;display:none"></span></button>
         <button class="nav-btn" data-p="archives" onclick="goPage('archives')"><span class="nav-ic">▤</span>Archives</button>
       </div>
@@ -363,6 +364,32 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
             <thead><tr><th>Date</th><th>Nom</th><th>Client</th><th>Pièces</th><th>Temps</th><th>Filaments</th><th>Prix/pièce</th><th>Prix total</th><th></th></tr></thead>
             <tbody id="arch-tbody"></tbody>
           </table>
+        </div>
+      </div>
+      <!-- ACHAT BOBINES -->
+      <div id="page-achat" class="page">
+        <div class="page-hdr"><h1>Commande de bobines</h1></div>
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <!-- Liste bobines à cocher -->
+          <div style="flex:1">
+            <p class="sec-title">Sélectionnez les bobines à commander</p>
+            <div id="achat-list"></div>
+          </div>
+          <!-- Récapitulatif -->
+          <div style="width:280px;position:sticky;top:20px">
+            <div class="card" style="border-color:rgba(200,255,87,.2)">
+              <div class="card-title">Récapitulatif</div>
+              <div id="achat-recap" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+              <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:13px;color:#d0ccc4">Total estimé</span>
+                  <span id="achat-total" style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent)">0.00 CHF</span>
+                </div>
+                <p style="font-size:11px;color:#888;margin-top:6px">Pour 1 bobine de 1kg chacune</p>
+              </div>
+              <button class="btn-primary w100 mt12" onclick="resetAchat()">Tout décocher</button>
+            </div>
+          </div>
         </div>
       </div>
     <!-- COMMANDES -->
@@ -526,6 +553,7 @@ function goPage(name){
   if(name==='archives')renderArchives();
   if(name==='devis')initDevis();
   if(name==='commandes'){renderCommandes();}
+  if(name==='achat'){renderAchat();}
 }
 
 /* ── DATA ── */
@@ -1062,6 +1090,85 @@ function delCmd(id){
   DB.collection('users/'+window._UID+'/commandes').doc(id).delete()
     .then(function(){ loadCmds().then(function(){ renderCommandes(); toast('Supprimée'); }); })
     .catch(function(e){alert('Erreur : '+e.message);});
+}
+
+/* ── ACHAT BOBINES ── */
+function renderAchat(){
+  var el = document.getElementById('achat-list'); if(!el) return;
+  if(!BOBS.length){ el.innerHTML='<div class="empty">Aucune bobine enregistrée</div>'; return; }
+
+  // Group by marque
+  var grouped = {};
+  BOBS.forEach(function(b){
+    var k = b.marque||'Autre';
+    if(!grouped[k]) grouped[k]=[];
+    grouped[k].push(b);
+  });
+
+  var html = '';
+  Object.keys(grouped).sort().forEach(function(marque){
+    html += '<div style="margin-bottom:16px">'
+      +'<div class="sec-title">'+esc(marque)+'</div>';
+    grouped[marque].forEach(function(b){
+      var checked = document.getElementById('ach-'+b._id) && document.getElementById('ach-'+b._id).checked ? 'checked' : '';
+      var rupt = b.rupture ? '<span class="badge b-warn" style="margin-left:8px">RUPTURE</span>' : '';
+      html += '<label style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;cursor:pointer;margin-bottom:7px;transition:border-color .15s" '
+        +'onmouseover="this.style.borderColor=\'rgba(200,255,87,.3)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,0.12)\'">'  
+        +'<input type="checkbox" id="ach-'+esc(b._id)+'" onchange="updateAchat()" '+(b.rupture?'checked':'')+' '
+        +'style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0"/>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;font-weight:600;color:#fff">'+esc(b.matiere)+' — '+esc(b.couleur)+rupt+'</div>'
+          +'<div style="font-size:11px;color:#a0a09a;font-family:var(--mono);margin-top:2px">'+esc(b._id)+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+          +'<div style="font-family:var(--mono);font-weight:700;color:var(--accent);font-size:14px">'+fmtN(b.prix)+' CHF/kg</div>'
+          +(b.lien?'<a href="'+esc(b.lien)+'" target="_blank" style="font-size:11px;color:#7fb3ff">Commander ↗</a>':'')
+        +'</div>'
+        +'</label>';
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+  updateAchat();
+}
+
+function updateAchat(){
+  var recap = document.getElementById('achat-recap');
+  var totalEl = document.getElementById('achat-total');
+  if(!recap||!totalEl) return;
+
+  var selected = [];
+  var total = 0;
+  BOBS.forEach(function(b){
+    var cb = document.getElementById('ach-'+b._id);
+    if(cb && cb.checked){
+      selected.push(b);
+      total += parseFloat(b.prix)||0;
+    }
+  });
+
+  if(!selected.length){
+    recap.innerHTML='<div style="font-size:12px;color:#888;text-align:center;padding:10px">Aucune bobine sélectionnée</div>';
+    totalEl.textContent='0.00 CHF';
+    return;
+  }
+
+  recap.innerHTML = selected.map(function(b){
+    return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="color:#d0ccc4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">'+esc(b.matiere)+' '+esc(b.couleur)+'</span>'
+      +'<span style="font-family:var(--mono);color:var(--accent);flex-shrink:0;margin-left:8px">'+fmtN(b.prix)+' CHF</span>'
+      +'</div>';
+  }).join('');
+
+  totalEl.textContent = r2(total).toFixed(2)+' CHF';
+}
+
+function resetAchat(){
+  BOBS.forEach(function(b){
+    var cb = document.getElementById('ach-'+b._id);
+    if(cb) cb.checked = false;
+  });
+  updateAchat();
 }
 
 /* ── EDIT PRIX ── */
