@@ -574,7 +574,7 @@ function renderBobines(){
       +'<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
         +'<button class="'+toggleCls+'" onclick="toggleRupture(\''+esc(b._id)+'\','+(!r)+')">'+toggleLabel+'</button>'
         +'<button class="toggle-rupt" style="border-color:rgba(200,255,87,.3);color:#c8ff57" onclick="editPrix(\''+esc(b._id)+'\',\''+b.prix+'\')">✎ Modifier prix</button>'
-        +'<button class="btn-del" onclick="delBob(\''+esc(b._id)+'\')">✕</button>'
+        +'<button class="btn-del" onclick="delBob(\''+esc(b._id)+'\')">&times;</button>'
       +'</td>'
       +'</tr>';
   }).join('');
@@ -650,7 +650,7 @@ function addFilRow(){
   var html='<div class="brow" id="'+rid+'">'
     +'<div><div class="brow-lbl">Bobine</div><select class="field bsel">'+opts+'</select></div>'
     +'<div><div class="brow-lbl">Grammes</div><input class="field bg" type="number" step="0.5" min="0" placeholder="ex: 70"/></div>'
-    +'<button class="btn-rmv" onclick="document.getElementById(\''+rid+'\').remove()">✕</button>'
+    +'<button class="btn-rmv" onclick="document.getElementById(\''+rid+'\').remove()">&times;</button>'
     +'</div>';
   document.getElementById('fil-rows').insertAdjacentHTML('beforeend',html);
 }
@@ -740,7 +740,7 @@ function renderArchives(){
       +'<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+filNames+'</td>'
       +'<td class="mono">'+chf(a.prixArrondi)+'</td>'
       +'<td class="acc">'+chf(total)+'</td>'
-      +'<td><button class="btn-del" onclick="event.stopPropagation();delArch(\''+a._id+'\')">✕</button></td>'
+      +'<td><button class="btn-del" onclick="event.stopPropagation();delArch(\''+a._id+'\')">&times;</button></td>'
       +'</tr>';
   }).join('');
 }
@@ -967,8 +967,8 @@ function renderCmdList(elId, list, statut){
   el.innerHTML = list.map(function(cmd){
     var fills = (cmd.items||[]).map(function(it){return esc(it.couleur||it.id);}).join(', ');
     var btns='';
-    if(statut==='attente') btns='<button class="toggle-rupt" style="border-color:rgba(255,165,0,.4);color:orange" onclick="changerStatutCmd(''+cmd._id+'','cours')">▶ Démarrer</button>';
-    if(statut==='cours')   btns='<button class="toggle-rupt" style="border-color:rgba(87,255,154,.4);color:#57ff9a" onclick="changerStatutCmd(''+cmd._id+'','termine')">✓ Terminer</button>';
+    if(statut==='attente') btns='<button class="toggle-rupt" style="border-color:rgba(255,165,0,.4);color:orange" onclick="changerStatutCmd(\''+cmd._id+'\',\'cours\')">&#9654; Démarrer</button>';
+    if(statut==='cours')   btns='<button class="toggle-rupt" style="border-color:rgba(87,255,154,.4);color:#57ff9a" onclick="changerStatutCmd(\''+cmd._id+'\',\'termine\')">&#10003; Terminer</button>';
     var badge = statut==='attente'?'<span class="badge b-warn">ATTENTE</span>':statut==='cours'?'<span class="badge" style="background:rgba(255,165,0,.15);color:orange;border:1px solid rgba(255,165,0,.3)">EN COURS</span>':'<span class="badge b-ok">TERMINÉ</span>';
     return '<div class="card" style="margin-bottom:10px">'
       +'<div class="flex-between" style="margin-bottom:10px">'
@@ -987,7 +987,7 @@ function renderCmdList(elId, list, statut){
       +(cmd.note?'<div style="font-size:12px;color:#c8c4bc;background:var(--bg3);border-radius:6px;padding:8px 10px;margin-bottom:10px">📝 '+esc(cmd.note)+'</div>':'')
       +'<div style="display:flex;gap:8px">'
         +btns
-        +'<button class="btn-del" onclick="delCmd(''+cmd._id+'')">Supprimer</button>'
+        +'<button class="btn-del" onclick="delCmd(\''+cmd._id+'\')" >Supprimer</button>'
       +'</div>'
       +'</div>';
   }).join('');
