@@ -807,7 +807,7 @@ function openPdfModal(type){
   document.getElementById('pdf-modal-title').textContent=type==='FACTURE'?'🧾 Facture PDF':'📄 Devis PDF';
   document.getElementById('pdf-client').value=RESULT.client||'';
   document.getElementById('pdf-qty').value=RESULT.pieces||1;
-  document.getElementById('pdf-qty-row').classList.toggle('hidden', type!=='FACTURE');
+  document.getElementById('pdf-qty-row').classList.remove('hidden');
   // Preview
   var pieces=RESULT.pieces||1;
   var prixU=RESULT.prixArrondi||0;
@@ -818,11 +818,8 @@ function openPdfModal(type){
   });
   preview+='<div class="pdf-row"><span>Temps d\'impression</span><span>'+RESULT.temps+' h</span></div>';
   preview+='<div class="pdf-row"><span>Filament total</span><span>'+totalG.toFixed(1)+' g</span></div>';
-  if(type==='FACTURE'){
-    preview+='<div class="pdf-row total"><span>Prix / pièce</span><span>'+chf(prixU)+'</span></div>';
-  } else {
-    preview+='<div class="pdf-row total"><span>Prix par pièce</span><span>'+chf(prixU)+'</span></div>';
-  }
+  preview+='<div class="pdf-row"><span>Prix par pièce</span><span>'+chf(prixU)+'</span></div>';
+  preview+='<div class="pdf-row total"><span>Total ('+qty+' pièce'+(qty>1?'s':'')+')</span><span>'+chf(r2(prixU*qty))+'</span></div>';
   preview+='</div>';
   document.getElementById('pdf-preview').innerHTML=preview;
   document.getElementById('modal-pdf').classList.add('open');
@@ -832,7 +829,7 @@ function genPDF(){
   if(!RESULT)return;
   var type=CURRENT_PDF_TYPE;
   var clientName=document.getElementById('pdf-client').value.trim()||RESULT.client||'';
-  var qty=type==='FACTURE'?parseInt(document.getElementById('pdf-qty').value)||1:RESULT.pieces||1;
+  var qty=parseInt(document.getElementById('pdf-qty').value)||RESULT.pieces||1;
   var prixU=RESULT.prixArrondi||0;
   var prixTotal=r2(prixU*qty);
   var totalG=0; (RESULT.items||[]).forEach(function(it){totalG+=it.g;});
@@ -887,17 +884,15 @@ function genPDF(){
   pdfRow('Temps d\'impression', RESULT.temps+' h', false);
   pdfRow('Filament total', totalG.toFixed(1)+' g', false);
   pdfRow('Nombre de pièces', qty+' pièce'+(qty>1?'s':''), false);
-  y+=3; doc.line(lm,y,210-lm,y); y+=6;
-  pdfRow('Prix par pièce', chf(prixU), true);
+  pdfRow('Prix par pièce', chf(prixU), false);
+  y+=3; doc.line(lm,y,210-lm,y); y+=8;
 
-  if(type==='FACTURE'){
-    y+=2;
-    doc.setFillColor(7,7,10); doc.roundedRect(lm,y-5,pw,14,2,2,'F');
-    doc.setTextColor(200,255,87); doc.setFontSize(13); doc.setFont('helvetica','bold');
-    doc.text('TOTAL',lm+4,y+4);
-    doc.text(chf(prixTotal),210-lm-4,y+4,{align:'right'});
-    y+=18;
-  }
+  // Bloc total (devis ET facture)
+  doc.setFillColor(7,7,10); doc.roundedRect(lm,y-5,pw,16,2,2,'F');
+  doc.setTextColor(200,255,87); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text(type==='FACTURE'?'TOTAL À PAYER':'TOTAL',lm+4,y+5);
+  doc.text(chf(prixTotal),210-lm-4,y+5,{align:'right'});
+  y+=22;
 
   // Pied de page
   doc.setTextColor(160,160,160); doc.setFontSize(8); doc.setFont('helvetica','normal');
