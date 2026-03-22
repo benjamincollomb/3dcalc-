@@ -315,7 +315,9 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
             <div class="rrow"><span>Coût création 3D</span><span class="rval" id="r-design">—</span></div>
             <div class="rrow"><span>Filament total</span><span class="rval" id="r-fil">—</span></div>
             <div class="rrow strong"><span>Coût total brut</span><span class="rval" id="r-total">—</span></div>
-            <div class="rrow final"><span class="rlbl-big">Prix par pièce</span><span class="rfinal" id="r-arrondi">—</span></div>
+            <div class="rrow strong"><span>Nombre de pièces</span><span class="rval" id="r-pieces">—</span></div>
+            <div class="rrow"><span>Prix par pièce</span><span class="rval" id="r-arrondi">—</span></div>
+            <div class="rrow final"><span class="rlbl-big">Prix total commande</span><span class="rfinal" id="r-total-final">—</span></div>
           </div>
           <div class="card-title mt12">Détail filaments</div>
           <div id="r-items" class="items-detail"></div>
@@ -543,8 +545,9 @@ function renderBobines(){
       +'<td>'+esc(b.poids||'')+'</td>'
       +'<td>'+badge+'</td>'
       +'<td>'+(b.lien?'<a href="'+esc(b.lien)+'" target="_blank" style="color:var(--accent);font-size:12px;">Commander ↗</a>':'—')+'</td>'
-      +'<td style="display:flex;gap:6px;align-items:center">'
+      +'<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
         +'<button class="'+toggleCls+'" onclick="toggleRupture(\''+esc(b._id)+'\','+(!r)+')">'+toggleLabel+'</button>'
+        +'<button class="toggle-rupt" style="border-color:rgba(200,255,87,.3);color:#c8ff57" onclick="editPrix(\''+esc(b._id)+'\',\''+b.prix+'\')">✎ Modifier prix</button>'
         +'<button class="btn-del" onclick="delBob(\''+esc(b._id)+'\')">✕</button>'
       +'</td>'
       +'</tr>';
@@ -663,7 +666,10 @@ function calcDevis(){
     costElec:costElec,fichier:fichier,amorti:amorti,fichAmorti:fichAmorti,dh:dh,dr:dr,designCost:designCost,
     items:itemsOut,totalFil:totalFil,totalCost:totalCost,avecMarge:avecMarge,prixArrondi:prixArrondi,prixTotal:prixTotal,date:Date.now()};
   setText('r-elec',chf(costElec)); setText('r-fich',chf(fichAmorti)); setText('r-design',chf(designCost));
-  setText('r-fil',chf(totalFil)); setText('r-total',chf(totalCost)); setText('r-arrondi',chf(prixArrondi));
+  setText('r-fil',chf(totalFil)); setText('r-total',chf(totalCost));
+  setText('r-pieces', pieces+' pièce'+(pieces>1?'s':''));
+  setText('r-arrondi',chf(prixArrondi));
+  setText('r-total-final', chf(prixTotal));
   document.getElementById('r-items').innerHTML=itemsOut.map(function(it){
     return '<div class="iline"><span class="iid">'+esc(it.id)+'</span><span>'+it.g+' g · '+fmtN(it.priceKg)+' CHF/kg</span><span class="iacc">'+chf(it.cost)+'</span></div>';
   }).join('');
@@ -858,6 +864,17 @@ function genPDF(){
   doc.save(fname);
   document.getElementById('modal-pdf').classList.remove('open');
   toast('PDF téléchargé ✓');
+}
+
+/* ── EDIT PRIX ── */
+function editPrix(id, currentPrix){
+  var newVal=prompt('Nouveau prix CHF/kg pour '+id+' :', currentPrix);
+  if(newVal===null)return;
+  var p=parseFloat(newVal);
+  if(isNaN(p)||p<=0){alert('Prix invalide.');return;}
+  DB.collection('users/'+window._UID+'/bobines').doc(id).update({prix:p})
+    .then(function(){loadBobs().then(function(){renderBobines();toast('Prix mis à jour : '+p.toFixed(2)+' CHF/kg');});})
+    .catch(function(e){alert('Erreur : '+e.message);});
 }
 
 /* ── HELPERS ── */
