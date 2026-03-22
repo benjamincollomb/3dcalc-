@@ -492,58 +492,50 @@ tr.rupt td{background:rgba(255,107,53,.04)!important;color:rgba(255,107,53,.6)!i
   </div>
 </div>
 
-<!-- FIREBASE SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, orderBy }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const cfg = {
+<!-- FIREBASE SDK (compat = no module needed) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
   apiKey:"AIzaSyBCKxvuxSRQ49CXk-qaEXjrPnrMMiYiZb0",
   authDomain:"dcalc-21210.firebaseapp.com",
   projectId:"dcalc-21210",
   storageBucket:"dcalc-21210.firebasestorage.app",
   messagingSenderId:"643000650232",
   appId:"1:643000650232:web:bd3c2752f0349bfbccee0d"
-};
-
-const app  = initializeApp(cfg);
-const auth = getAuth(app);
-const db   = getFirestore(app);
-
-window._A = auth;
-window._D = db;
-window._F = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-  collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, orderBy };
-
-onAuthStateChanged(auth, u => {
-  if(u){
-    window._UID = u.uid;
-    // Hide auth, show app
-    document.getElementById('pg-login').style.display = 'none';
-    document.getElementById('pg-register').style.display = 'none';
-    const appEl = document.getElementById('app');
-    appEl.style.display = 'block';
-    appEl.style.minHeight = '100vh';
-    document.getElementById('user-em').textContent = u.email;
-    document.getElementById('today').textContent = todayStr();
-    // Activate accueil page
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const pg = document.getElementById('page-accueil');
-    if(pg) pg.classList.add('active');
-    const btn = document.querySelector('.nav-btn[data-p="accueil"]');
-    if(btn) btn.classList.add('active');
-    // Load data
-    loadAll();
-  } else {
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('pg-login').style.display = 'flex';
-    document.getElementById('pg-register').style.display = 'none';
-  }
 });
+
+const _auth = firebase.auth();
+const _db   = firebase.firestore();
+
+function showApp(u) {
+  window._UID = u.uid;
+  document.getElementById('pg-login').style.display = 'none';
+  document.getElementById('pg-register').style.display = 'none';
+  document.getElementById('app').style.cssText = 'display:block;min-height:100vh;';
+  document.getElementById('user-em').textContent = u.email;
+  document.getElementById('today').textContent = todayStr();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-accueil').classList.add('active');
+  document.querySelector('.nav-btn[data-p="accueil"]').classList.add('active');
+  loadAll();
+}
+
+function showLogin() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pg-login').style.cssText = 'display:flex;min-height:100vh;';
+  document.getElementById('pg-register').style.display = 'none';
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    firebase.auth().onAuthStateChanged(u => u ? showApp(u) : showLogin());
+  });
+} else {
+  firebase.auth().onAuthStateChanged(u => u ? showApp(u) : showLogin());
+}
 </script>
 
 <script>
@@ -559,12 +551,12 @@ const PAL = ['#c8ff57','#ff6b35','#57c8ff','#ff57c8','#57ffb0','#ffc857','#c857f
    PAGE ROUTING
 ════════════════════════════ */
 function showPg(id){
-  const login = document.getElementById('pg-login');
-  const reg   = document.getElementById('pg-register');
-  const app   = document.getElementById('app');
-  if(login) login.style.display = id==='pg-login' ? 'flex' : 'none';
-  if(reg)   reg.style.display   = id==='pg-register' ? 'flex' : 'none';
-  if(app)   app.style.display   = id==='app' ? 'block' : 'none';
+  if(id==='pg-login') showLogin();
+  else if(id==='pg-register'){
+    document.getElementById('pg-login').style.display='none';
+    document.getElementById('pg-register').style.cssText='display:flex;min-height:100vh;';
+    document.getElementById('app').style.display='none';
+  }
 }
 
 function goPage(name){
@@ -589,7 +581,7 @@ async function doLogin(){
   errEl.style.display='none';
   if(!em||!pw){showErr('login-err','Remplis tous les champs.');return;}
   try{
-    await window._F.signInWithEmailAndPassword(window._A, em, pw);
+    await _auth.signInWithEmailAndPassword(em, pw);
   }catch(e){showErr('login-err', fbErr(e));}
 }
 
@@ -600,14 +592,14 @@ async function doRegister(){
   if(!em||!pw){showErr('reg-err','Remplis tous les champs.');return;}
   if(pw.length<6){showErr('reg-err','Mot de passe min. 6 caractères.');return;}
   try{
-    await window._F.createUserWithEmailAndPassword(window._A, em, pw);
+    await _auth.createUserWithEmailAndPassword(em, pw);
     document.getElementById('reg-ok').textContent='Compte créé ! Connexion en cours…';
     document.getElementById('reg-ok').style.display='block';
   }catch(e){showErr('reg-err', fbErr(e));}
 }
 
 async function doLogout(){
-  await window._F.signOut(window._A);
+  await _auth.signOut();
 }
 
 function fbErr(e){
@@ -637,16 +629,12 @@ async function loadAll(){
 }
 
 async function loadBobs(){
-  const snap = await window._F.getDocs(window._F.collection(window._D,`users/${window._UID}/bobines`));
+  const snap = await _db.collection(`users/${window._UID}/bobines`).get();
   BOBS = snap.docs.map(d=>({_id:d.id,...d.data()}));
 }
 
 async function loadArchs(){
-  const q = window._F.query(
-    window._F.collection(window._D,`users/${window._UID}/archives`),
-    window._F.orderBy('date','desc')
-  );
-  const snap = await window._F.getDocs(q);
+  const snap = await _db.collection(`users/${window._UID}/archives`).orderBy('date','desc').get();
   ARCHS = snap.docs.map(d=>({_id:d.id,...d.data()}));
 }
 
@@ -737,8 +725,7 @@ async function saveBobine(){
   if(BOBS.find(b=>b._id===id)){showErr('mb-err',`ID déjà existant : ${id}`);return;}
 
   try{
-    await window._F.setDoc(window._F.doc(window._D,`users/${window._UID}/bobines`,id),
-      {id,marque,matiere,couleur,prix,diametre,poids,lien,rupture});
+    await _db.collection(`users/${window._UID}/bobines`).doc(id).set({id,marque,matiere,couleur,prix,diametre,poids,lien,rupture});
     await loadBobs();
     closeModalBobine();
     renderBobines();
@@ -750,7 +737,7 @@ async function saveBobine(){
 async function delBob(id){
   if(!confirm('Supprimer cette bobine ?')) return;
   try{
-    await window._F.deleteDoc(window._F.doc(window._D,`users/${window._UID}/bobines`,id));
+    await _db.collection(`users/${window._UID}/bobines`).doc(id).delete();
     await loadBobs(); renderBobines(); renderAccueil(); toast('Supprimée');
   }catch(e){alert('Erreur : '+e.message);}
 }
@@ -861,7 +848,7 @@ async function archiverDevis(){
   document.getElementById('arch-msg').style.display='none';
   document.getElementById('arch-err').style.display='none';
   try{
-    await window._F.addDoc(window._F.collection(window._D,`users/${window._UID}/archives`),{...RESULT});
+    await _db.collection(`users/${window._UID}/archives`).add({...RESULT});
     await loadArchs();
     document.getElementById('arch-msg').textContent='✓ Archivé avec succès !';
     document.getElementById('arch-msg').style.display='block';
@@ -930,7 +917,7 @@ function openArchDetail(id){
 async function delArch(id){
   if(!confirm('Supprimer cette archive ?')) return;
   try{
-    await window._F.deleteDoc(window._F.doc(window._D,`users/${window._UID}/archives`,id));
+    await _db.collection(`users/${window._UID}/archives`).doc(id).delete();
     await loadArchs(); renderArchives(); renderAccueil(); toast('Archive supprimée');
   }catch(e){alert('Erreur : '+e.message);}
 }
