@@ -452,6 +452,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
     <div class="modal-title" id="ma-title">Détail</div>
     <div id="ma-content"></div>
     <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn-primary" style="background:var(--warn);color:#000" onclick="ajouterCommandeFromArch(CURRENT_ARCH_PDF._id)">📋 Commander</button>
       <button class="pdf-type-btn devis" onclick="openPdfFromArch('DEVIS')">📄 Devis PDF</button>
       <button class="pdf-type-btn facture" onclick="openPdfFromArch('FACTURE')">🧾 Facture PDF</button>
       <button class="btn-secondary" onclick="document.getElementById('modal-arch').classList.remove('open')">Fermer</button>
