@@ -819,7 +819,7 @@ function openPdfModal(type){
   preview+='<div class="pdf-row"><span>Temps d\'impression</span><span>'+RESULT.temps+' h</span></div>';
   preview+='<div class="pdf-row"><span>Filament total</span><span>'+totalG.toFixed(1)+' g</span></div>';
   preview+='<div class="pdf-row"><span>Prix par pièce</span><span>'+chf(prixU)+'</span></div>';
-  preview+='<div class="pdf-row total"><span>Total ('+qty+' pièce'+(qty>1?'s':'')+')</span><span>'+chf(r2(prixU*qty))+'</span></div>';
+  var qty=pieces; preview+='<div class="pdf-row total"><span>Total ('+qty+' pièce'+(qty>1?'s':'')+')</span><span>'+chf(r2(prixU*qty))+'</span></div>';
   preview+='</div>';
   document.getElementById('pdf-preview').innerHTML=preview;
   document.getElementById('modal-pdf').classList.add('open');
