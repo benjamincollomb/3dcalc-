@@ -316,9 +316,8 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
             <div class="rrow"><span>Coût création 3D</span><span class="rval" id="r-design">—</span></div>
             <div class="rrow"><span>Filament total</span><span class="rval" id="r-fil">—</span></div>
             <div class="rrow strong"><span>Coût total brut</span><span class="rval" id="r-total">—</span></div>
-            <div class="rrow strong"><span>Nombre de pièces</span><span class="rval" id="r-pieces">—</span></div>
             <div class="rrow"><span>Prix par pièce</span><span class="rval" id="r-arrondi">—</span></div>
-            <div class="rrow final"><span class="rlbl-big">Prix total commande</span><span class="rfinal" id="r-total-final">—</span></div>
+            <div class="rrow final"><span class="rlbl-big">Prix total (<span id="r-pieces-label">—</span>)</span><span class="rfinal" id="r-total-final">—</span></div>
           </div>
           <div class="card-title mt12">Détail filaments</div>
           <div id="r-items" class="items-detail"></div>
@@ -694,7 +693,7 @@ function calcDevis(){
     items:itemsOut,totalFil:totalFil,totalCost:totalCost,avecMarge:avecMarge,prixArrondi:prixArrondi,prixTotal:prixTotal,date:Date.now()};
   setText('r-elec',chf(costElec)); setText('r-fich',chf(fichAmorti)); setText('r-design',chf(designCost));
   setText('r-fil',chf(totalFil)); setText('r-total',chf(totalCost));
-  setText('r-pieces', pieces+' pièce'+(pieces>1?'s':''));
+  setText('r-pieces-label', pieces+' pièce'+(pieces>1?'s':''));
   setText('r-arrondi',chf(prixArrondi));
   setText('r-total-final', chf(prixTotal));
   document.getElementById('r-items').innerHTML=itemsOut.map(function(it){
@@ -910,7 +909,7 @@ function updateBadgeCmds(){
 }
 
 function ajouterCommande(){
-  if(!RESULT){alert('Calcule un devis d'abord.');return;}
+  if(!RESULT){alert('Calcule un devis avant.');return;}
   var note = prompt('Note pour la commande (optionnel) :', '');
   if(note===null)return;
   var data = {
@@ -926,7 +925,7 @@ function ajouterCommande(){
 
 function ajouterCommandeFromArch(id){
   var a = ARCHS.find(function(x){return x._id===id;}); if(!a)return;
-  var note = prompt('Note pour la commande (optionnel) :', '');
+  var note = prompt('Note (optionnel) :', '');
   if(note===null)return;
   var data = {
     nom: a.nom, client: a.client||'', pieces: a.pieces||1,
