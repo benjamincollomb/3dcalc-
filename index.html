@@ -745,9 +745,10 @@ function addAnnexeRow(){
   var devLabel=DEVISE_DEVIS==='EUR'?' (EUR)':'';
   var div=document.createElement('div');
   div.className='annexe-row';
-  div.style.cssText='display:grid;grid-template-columns:1fr 140px auto;gap:9px;align-items:end;margin-bottom:9px';
+  div.style.cssText='display:grid;grid-template-columns:1fr 80px 100px auto;gap:9px;align-items:end;margin-bottom:9px';
   div.innerHTML='<div><div class="brow-lbl">Description</div><input class="field ann-desc" type="text" placeholder="ex: Vis M3, Aimant N52..."/></div>'
-    +'<div><div class="brow-lbl">Prix CHF'+devLabel+'</div><input class="field ann-prix" type="number" step="0.01" min="0" placeholder="0.00"/></div>'
+    +'<div><div class="brow-lbl">Qté</div><input class="field ann-qty" type="number" min="1" value="1" step="1"/></div>'
+    +'<div><div class="brow-lbl">Prix unit. CHF'+devLabel+'</div><input class="field ann-prix" type="number" step="0.01" min="0" placeholder="0.00"/></div>'
     +'<button class="btn-rmv">&times;</button>';
   div.querySelector('.btn-rmv').addEventListener('click',function(){
     div.remove();
@@ -803,9 +804,11 @@ function calcDevis(){
   var annexes=[];
   document.querySelectorAll('.annexe-row').forEach(function(row){
     var desc=(row.querySelector('.ann-desc').value||'').trim();
+    var qty=Math.max(1,parseInt(row.querySelector('.ann-qty').value||1));
     var prixRaw=parseFloat(row.querySelector('.ann-prix').value||0);
-    var prix=toCHF(prixRaw);
-    if(desc&&prix>0) annexes.push({desc:desc,prix:r2(prix)});
+    var prixUnit=toCHF(prixRaw);
+    var prixTotal=r2(prixUnit*qty);
+    if(desc&&prixUnit>0) annexes.push({desc:desc,qty:qty,prixUnit:r2(prixUnit),prix:prixTotal});
   });
   var totalAnnexe=r2(annexes.reduce(function(s,a){return s+a.prix;},0));
   var costElec=r2((watts/1000)*temps*kwh);
@@ -848,7 +851,8 @@ function calcDevis(){
   var annexeWrap=document.getElementById('r-annexe-detail-wrap');
   if(annexes.length>0){
     document.getElementById('r-annexe-items').innerHTML=annexes.map(function(a){
-      return '<div class="iline"><span>'+esc(a.desc)+'</span><span class="iacc">'+chf(a.prix)+'</span></div>';
+      var detail=a.qty>1?' ('+a.qty+' × '+chf(a.prixUnit)+')':'';
+      return '<div class="iline"><span>'+esc(a.desc)+detail+'</span><span class="iacc">'+chf(a.prix)+'</span></div>';
     }).join('');
     annexeWrap.style.display='block';
   } else {
