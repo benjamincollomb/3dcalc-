@@ -1139,42 +1139,25 @@ function delCmd(id){
     .catch(function(e){alert('Erreur : '+e.message);});
 }
 
-/* ── DEVISE DEVIS ── */
+/* ── DEVISE ── */
 var DEVISE_DEVIS = 'CHF';
+var TAUX_CHF_EUR = 0.955; // 1 CHF = X EUR  |  1 EUR = 1/X CHF
 
-function setDeviseDevis(devise){
-  DEVISE_DEVIS = devise;
-  var btnChf = document.getElementById('btn-chf');
-  var btnEur = document.getElementById('btn-eur');
-  var info   = document.getElementById('devise-info');
-  if(devise==='EUR'){
-    if(btnChf){btnChf.style.background='transparent';btnChf.style.color='#a0a09a';}
-    if(btnEur){btnEur.style.background='var(--accent)';btnEur.style.color='#000';}
-    if(info)info.style.display='block';
-  } else {
-    if(btnChf){btnChf.style.background='var(--accent)';btnChf.style.color='#000';}
-    if(btnEur){btnEur.style.background='transparent';btnEur.style.color='#a0a09a';}
-    if(info)info.style.display='none';
-  }
-}
-
+// Affiche la conversion EUR→CHF sous un champ en mode EUR
 function showConv(inputId, labelId){
   var lbl = document.getElementById(labelId); if(!lbl) return;
   if(DEVISE_DEVIS!=='EUR'){lbl.textContent='';return;}
   var val = parseFloat(document.getElementById(inputId).value)||0;
   if(val<=0){lbl.textContent='';return;}
-  var chfVal = r2(val/TAUX_EUR);
+  var chfVal = r2(val / TAUX_CHF_EUR);
   lbl.textContent = '= '+chfVal.toFixed(2)+' CHF';
 }
 
+// Convertit une valeur saisie dans la devise active → CHF (pour le calcul)
 function toCHF(val){
-  if(DEVISE_DEVIS==='EUR') return r2(val / TAUX_EUR);
+  if(DEVISE_DEVIS==='EUR') return r2(val / TAUX_CHF_EUR);
   return val;
 }
-
-/* ── DEVISE ── */
-var DEVISE_DEVIS = 'CHF';
-var TAUX_CHF_EUR = 0.955; // 1 CHF = X EUR  |  1 EUR = 1/X CHF
 
 function setDeviseDevis(d){
   DEVISE_DEVIS = d;
