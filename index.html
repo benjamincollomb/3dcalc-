@@ -343,6 +343,17 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
           <div id="fil-rows"></div>
           <p class="hint mt8">Les bobines en rupture ne sont pas proposées.</p>
         </div>
+        <div class="card" style="margin-top:14px">
+          <div class="flex-between" style="margin-bottom:14px">
+            <div>
+              <div class="card-title" style="margin:0">Pièces annexes</div>
+              <p class="hint" style="margin-top:4px">Visserie, aimants, inserts, composants… Inclus avant la marge.</p>
+            </div>
+            <button class="btn-secondary" onclick="addAnnexeRow()">+ Ajouter</button>
+          </div>
+          <div id="annexe-rows"></div>
+          <div id="annexe-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune pièce annexe</div>
+        </div>
         <div id="d-err" class="msg-error mt8"></div>
         <div class="card result-card hidden mt12" id="result-card">
           <div class="card-title">Résultat</div>
@@ -351,6 +362,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
             <div class="rrow"><span>Coût fichier amorti</span><span class="rval" id="r-fich">—</span></div>
             <div class="rrow"><span>Coût création 3D</span><span class="rval" id="r-design">—</span></div>
             <div class="rrow"><span>Filament total</span><span class="rval" id="r-fil">—</span></div>
+            <div class="rrow" id="r-annexe-row"><span>Pièces annexes</span><span class="rval" id="r-annexe">—</span></div>
             <div class="rrow strong"><span>Coût total brut</span><span class="rval" id="r-total">—</span></div>
             <div class="rrow"><span>Prix par pièce (sans envoi)</span><span class="rval" id="r-arrondi">—</span></div>
             <div class="rrow" id="r-envoi-row"><span>Frais d'envoi</span><span class="rval" id="r-envoi">—</span></div>
@@ -360,6 +372,10 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
           <div id="r-eur" style="margin:6px 0 8px;display:flex;gap:12px;flex-wrap:wrap"></div>
           <div class="card-title mt12">Détail filaments</div>
           <div id="r-items" class="items-detail"></div>
+          <div id="r-annexe-detail-wrap" style="display:none">
+            <div class="card-title mt12">Détail pièces annexes</div>
+            <div id="r-annexe-items" class="items-detail"></div>
+          </div>
           <div id="arch-msg" class="msg-success mt8"></div>
           <div id="arch-err" class="msg-error mt8"></div>
           <div style="display:flex;gap:10px;margin-top:14px;">
@@ -712,6 +728,8 @@ function delBob(id){
 /* ── DEVIS ── */
 function initDevis(){
   document.getElementById('fil-rows').innerHTML='';
+  document.getElementById('annexe-rows').innerHTML='';
+  document.getElementById('annexe-empty').style.display='block';
   document.getElementById('result-card').classList.add('hidden');
   document.getElementById('d-err').style.display='none';
   RESULT=null; addFilRow();
@@ -721,6 +739,24 @@ function applyMarge(){
   var p={AMI:20,'7 ART':5,CLIENT:40,PERSO:0};
   if(t in p)document.getElementById('d-marge').value=p[t];
 }
+function addAnnexeRow(){
+  var container=document.getElementById('annexe-rows');
+  document.getElementById('annexe-empty').style.display='none';
+  var devLabel=DEVISE_DEVIS==='EUR'?' (EUR)':'';
+  var div=document.createElement('div');
+  div.className='annexe-row';
+  div.style.cssText='display:grid;grid-template-columns:1fr 140px auto;gap:9px;align-items:end;margin-bottom:9px';
+  div.innerHTML='<div><div class="brow-lbl">Description</div><input class="field ann-desc" type="text" placeholder="ex: Vis M3, Aimant N52..."/></div>'
+    +'<div><div class="brow-lbl">Prix CHF'+devLabel+'</div><input class="field ann-prix" type="number" step="0.01" min="0" placeholder="0.00"/></div>'
+    +'<button class="btn-rmv">&times;</button>';
+  div.querySelector('.btn-rmv').addEventListener('click',function(){
+    div.remove();
+    if(!document.querySelectorAll('.annexe-row').length)
+      document.getElementById('annexe-empty').style.display='block';
+  });
+  container.appendChild(div);
+}
+
 function addFilRow(){
   var dispo=BOBS.filter(function(b){return !b.rupture;});
   var idx=document.querySelectorAll('.brow').length;
@@ -763,22 +799,41 @@ function calcDevis(){
     if(id&&gr>0){var bob=BOBS.find(function(b){return b._id===id;});if(bob)items.push({id:id,g:gr,priceKg:parseFloat(bob.prix),matiere:bob.matiere,couleur:bob.couleur,marque:bob.marque});}
   });
   if(!items.length){showErrDiv('d-err','Ajoute au moins un filament.');return;}
+  // Pièces annexes
+  var annexes=[];
+  document.querySelectorAll('.annexe-row').forEach(function(row){
+    var desc=(row.querySelector('.ann-desc').value||'').trim();
+    var prixRaw=parseFloat(row.querySelector('.ann-prix').value||0);
+    var prix=toCHF(prixRaw);
+    if(desc&&prix>0) annexes.push({desc:desc,prix:r2(prix)});
+  });
+  var totalAnnexe=r2(annexes.reduce(function(s,a){return s+a.prix;},0));
   var costElec=r2((watts/1000)*temps*kwh);
   var fichAmorti=r2(fichier/Math.max(amorti,1));
   var designCost=r2(dh*dr);
   var totalFil=0;
   var itemsOut=items.map(function(it){var cost=r2((it.g/1000)*it.priceKg);totalFil+=cost;return Object.assign({},it,{cost:cost});});
   totalFil=r2(totalFil);
-  var totalCost=r2(costElec+fichAmorti+designCost+totalFil);
+  var totalCost=r2(costElec+fichAmorti+designCost+totalFil+totalAnnexe);
   var avecMarge=r2(totalCost*(1+margePct/100));
   var prixArrondi=ceil10(avecMarge);
   var prixArrondiAvecEnvoi=ceil10(r2(prixArrondi+envoi));
   var prixTotal=r2(prixArrondiAvecEnvoi*pieces);
   RESULT={nom:nom,client:client,pieces:pieces,typeMarge:typeMarge,margePct:margePct,temps:temps,watts:watts,kwh:kwh,envoi:envoi,
     costElec:costElec,fichier:fichier,amorti:amorti,fichAmorti:fichAmorti,dh:dh,dr:dr,designCost:designCost,
-    items:itemsOut,totalFil:totalFil,totalCost:totalCost,avecMarge:avecMarge,prixArrondi:prixArrondi,prixTotal:prixTotal,date:Date.now()};
+    items:itemsOut,totalFil:totalFil,annexes:annexes,totalAnnexe:totalAnnexe,
+    totalCost:totalCost,avecMarge:avecMarge,prixArrondi:prixArrondi,prixTotal:prixTotal,date:Date.now()};
   setText('r-elec',chf(costElec)); setText('r-fich',chf(fichAmorti)); setText('r-design',chf(designCost));
-  setText('r-fil',chf(totalFil)); setText('r-total',chf(totalCost));
+  setText('r-fil',chf(totalFil));
+  // Pièces annexes dans résultat
+  var annexeRow=document.getElementById('r-annexe-row');
+  if(totalAnnexe>0){
+    setText('r-annexe',chf(totalAnnexe));
+    annexeRow.style.display='flex';
+  } else {
+    annexeRow.style.display='none';
+  }
+  setText('r-total',chf(totalCost));
   setText('r-pieces-label', pieces+' pièce'+(pieces>1?'s':''));
   setText('r-arrondi',chf(prixArrondi));
   setText('r-envoi', envoi>0?chf(envoi):'—');
@@ -789,6 +844,16 @@ function calcDevis(){
   document.getElementById('r-items').innerHTML=itemsOut.map(function(it){
     return '<div class="iline"><span class="iid">'+esc(it.id)+'</span><span>'+it.g+' g · '+fmtN(it.priceKg)+' CHF/kg</span><span class="iacc">'+chf(it.cost)+'</span></div>';
   }).join('');
+  // Détail pièces annexes
+  var annexeWrap=document.getElementById('r-annexe-detail-wrap');
+  if(annexes.length>0){
+    document.getElementById('r-annexe-items').innerHTML=annexes.map(function(a){
+      return '<div class="iline"><span>'+esc(a.desc)+'</span><span class="iacc">'+chf(a.prix)+'</span></div>';
+    }).join('');
+    annexeWrap.style.display='block';
+  } else {
+    annexeWrap.style.display='none';
+  }
   document.getElementById('arch-msg').style.display='none';
   document.getElementById('arch-err').style.display='none';
   document.getElementById('result-card').classList.remove('hidden');
