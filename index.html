@@ -110,6 +110,9 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
 .btn-primary:hover{background:#b8ef47;}
 .btn-secondary{background:transparent;color:#d0ccc4;border:1px solid var(--border2);border-radius:var(--r);padding:9px 18px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-secondary:hover{color:#ffffff;border-color:rgba(255,255,255,.4);}
+.devise-btn{background:transparent;color:#888;border:none;border-radius:5px;padding:4px 10px;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+.devise-btn.active{background:var(--accent);color:#000;}
+.devise-btn:hover:not(.active){color:#fff;}
 .sort-btn{background:var(--bg3);color:#b0aca4;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .15s;}
 .sort-btn:hover{border-color:var(--accent);color:var(--accent);}
 .sort-btn.active{background:rgba(200,255,87,.1);border-color:rgba(200,255,87,.4);color:var(--accent);}
@@ -279,7 +282,23 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
       </div>
       <!-- DEVIS -->
       <div id="page-devis" class="page">
-        <div class="page-hdr"><h1>Nouveau devis</h1><button class="btn-primary" onclick="calcDevis()">Calculer →</button></div>
+        <div class="page-hdr">
+          <h1>Nouveau devis</h1>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+                <button id="btn-chf" onclick="setDeviseDevis('CHF')" style="padding:8px 18px;font-family:var(--mono);font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--accent);color:#000;transition:all .15s">🇨🇭 CHF</button>
+                <button id="btn-eur" onclick="setDeviseDevis('EUR')" style="padding:8px 18px;font-family:var(--mono);font-size:12px;font-weight:700;border:none;cursor:pointer;background:transparent;color:#a0a09a;transition:all .15s">🇪🇺 EUR</button>
+              </div>
+              <div id="taux-row" style="display:none;align-items:center;gap:5px">
+                <span style="font-size:10px;color:#a0a09a;font-family:var(--mono)">1 EUR =</span>
+                <input id="taux-eur" type="number" step="0.001" value="0.955" style="width:65px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 7px;color:#fff;font-family:var(--mono);font-size:11px;outline:none" oninput="updateTauxDisplay()"/>
+                <span style="font-size:10px;color:#a0a09a;font-family:var(--mono)">CHF</span>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="calcDevis()">Calculer →</button>
+          </div>
+        </div>
         <div class="grid2">
           <div class="card">
             <div class="card-title">Informations</div>
@@ -294,8 +313,9 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
               <option value="PERSO">PERSO — Personnel</option>
             </select>
             <label class="flabel">Marge (%)</label><input id="d-marge" class="field" type="number" value="20" min="0" max="500"/>
-            <label class="flabel">Frais d'envoi (CHF)</label><input id="d-envoi" class="field" type="number" step="0.5" value="0" min="0"/>
+            <label class="flabel">Frais d'envoi <span id="d-envoi-devise" style="color:var(--accent);font-size:10px"></span></label><input id="d-envoi" class="field" type="number" step="0.5" value="0" min="0" oninput="showConv('d-envoi','d-envoi-devise')"/>
             <p class="hint">Ajoutés au prix final après la marge</p>
+            <div id="devise-info" style="display:none;background:rgba(200,255,87,0.07);border:1px solid rgba(200,255,87,0.2);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12px;color:#c8c4bc;font-family:var(--mono)">Mode EUR actif — les prix sont saisis en EUR et convertis en CHF</div>
           </div>
           <div class="card">
             <div class="card-title">Impression</div>
@@ -311,7 +331,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
             </div>
             <div class="grid2">
               <div><label class="flabel">Création 3D (h)</label><input id="d-dh" class="field" type="number" step="0.1" value="0"/></div>
-              <div><label class="flabel">Tarif création (CHF/h)</label><input id="d-dr" class="field" type="number" value="0"/></div>
+              <div><label class="flabel">Tarif création <span id="d-dr-devise" style="color:var(--accent);font-size:10px"></span></label><input id="d-dr" class="field" type="number" value="0" oninput="showConv('d-dr','d-dr-devise')"/></div>
             </div>
           </div>
         </div>
@@ -726,11 +746,14 @@ function calcDevis(){
   var temps=parseFloat(document.getElementById('d-temps').value)||0;
   var watts=parseFloat(document.getElementById('d-w').value)||100;
   var kwh=parseFloat(document.getElementById('d-kwh').value)||0.33;
-  var fichier=parseFloat(document.getElementById('d-fich').value)||0;
+  var fichierRaw=parseFloat(document.getElementById('d-fich').value)||0;
+  var fichier=toCHF(fichierRaw);
   var amorti=parseInt(document.getElementById('d-amort').value)||1;
   var dh=parseFloat(document.getElementById('d-dh').value)||0;
-  var dr=parseFloat(document.getElementById('d-dr').value)||0;
-  var envoi=parseFloat(document.getElementById('d-envoi').value)||0;
+  var drRaw=parseFloat(document.getElementById('d-dr').value)||0;
+  var dr=toCHF(drRaw);
+  var envoiRaw=parseFloat(document.getElementById('d-envoi').value)||0;
+  var envoi=toCHF(envoiRaw);
   if(!nom){showErrDiv('d-err','Nom du projet obligatoire.');return;}
   if(temps<=0){showErrDiv('d-err',"Temps d'impression obligatoire.");return;}
   var items=[];
@@ -770,8 +793,7 @@ function calcDevis(){
   document.getElementById('arch-err').style.display='none';
   document.getElementById('result-card').classList.remove('hidden');
   document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'start'});
-  RESULT.prixArrondiAvecEnvoi=prixArrondiAvecEnvoi;
-  updateEurDisplay();
+
 }
 function archiverDevis(){
   if(!RESULT)return;
@@ -969,7 +991,10 @@ function genPDF(){
   pdfRow('Temps d\'impression', RESULT.temps+' h', false);
   pdfRow('Filament total', totalG.toFixed(1)+' g', false);
   pdfRow('Nombre de pièces', qty+' pièce'+(qty>1?'s':''), false);
-  pdfRow('Prix par pièce', chf(prixU), false);
+  var sym=DEVISE_DEVIS==='EUR'?'EUR':'CHF';
+  var prixUdisp=DEVISE_DEVIS==='EUR'?(prixU*TAUX_CHF_EUR).toFixed(2)+' EUR':chf(prixU);
+  var prixTdisp=DEVISE_DEVIS==='EUR'?(prixTotal*TAUX_CHF_EUR).toFixed(2)+' EUR':chf(prixTotal);
+  pdfRow('Prix par pièce', prixUdisp, false);
   y+=3; doc.line(lm,y,210-lm,y); y+=8;
 
   // Bloc total (devis ET facture)
@@ -1114,35 +1139,97 @@ function delCmd(id){
     .catch(function(e){alert('Erreur : '+e.message);});
 }
 
-/* ── TAUX EUR ── */
-var TAUX_EUR = 0.955;
+/* ── DEVISE DEVIS ── */
+var DEVISE_DEVIS = 'CHF';
 
-function updateTaux(){
-  var t = parseFloat(document.getElementById('taux-eur').value);
-  if(isNaN(t)||t<=0) return;
-  TAUX_EUR = t;
-  var inv = (1/t).toFixed(4);
-  var d = document.getElementById('taux-display');
-  if(d) d.textContent = '1 CHF = '+inv+' EUR';
-  // Refresh result if visible
+function setDeviseDevis(devise){
+  DEVISE_DEVIS = devise;
+  var btnChf = document.getElementById('btn-chf');
+  var btnEur = document.getElementById('btn-eur');
+  var info   = document.getElementById('devise-info');
+  if(devise==='EUR'){
+    if(btnChf){btnChf.style.background='transparent';btnChf.style.color='#a0a09a';}
+    if(btnEur){btnEur.style.background='var(--accent)';btnEur.style.color='#000';}
+    if(info)info.style.display='block';
+  } else {
+    if(btnChf){btnChf.style.background='var(--accent)';btnChf.style.color='#000';}
+    if(btnEur){btnEur.style.background='transparent';btnEur.style.color='#a0a09a';}
+    if(info)info.style.display='none';
+  }
+}
+
+function showConv(inputId, labelId){
+  var lbl = document.getElementById(labelId); if(!lbl) return;
+  if(DEVISE_DEVIS!=='EUR'){lbl.textContent='';return;}
+  var val = parseFloat(document.getElementById(inputId).value)||0;
+  if(val<=0){lbl.textContent='';return;}
+  var chfVal = r2(val/TAUX_EUR);
+  lbl.textContent = '= '+chfVal.toFixed(2)+' CHF';
+}
+
+function toCHF(val){
+  if(DEVISE_DEVIS==='EUR') return r2(val / TAUX_EUR);
+  return val;
+}
+
+/* ── DEVISE ── */
+var DEVISE_DEVIS = 'CHF';
+var TAUX_CHF_EUR = 0.955; // 1 CHF = X EUR  |  1 EUR = 1/X CHF
+
+function setDeviseDevis(d){
+  DEVISE_DEVIS = d;
+  var taux = parseFloat(document.getElementById('taux-eur').value)||0.955;
+  TAUX_CHF_EUR = taux;
+
+  // Toggle buttons
+  var bchf = document.getElementById('btn-chf');
+  var beur = document.getElementById('btn-eur');
+  if(bchf){ bchf.style.background = d==='CHF'?'var(--accent)':'transparent'; bchf.style.color = d==='CHF'?'#000':'#a0a09a'; }
+  if(beur){ beur.style.background = d==='EUR'?'#2563eb':'transparent'; beur.style.color = d==='EUR'?'#fff':'#a0a09a'; }
+
+  // Show/hide taux input
+  var tr = document.getElementById('taux-row');
+  if(tr) tr.style.display = d==='EUR' ? 'flex' : 'none';
+
+  // Refresh display if result visible
   if(RESULT && !document.getElementById('result-card').classList.contains('hidden')){
-    updateEurDisplay();
+    refreshResultDisplay();
   }
 }
 
-function chfToEur(chfVal){
-  return (parseFloat(chfVal)||0) * TAUX_EUR;
+function updateTauxDisplay(){
+  var t = parseFloat(document.getElementById('taux-eur').value)||0.955;
+  TAUX_CHF_EUR = t;
+  if(RESULT && !document.getElementById('result-card').classList.contains('hidden')){
+    refreshResultDisplay();
+  }
 }
 
-function updateEurDisplay(){
-  // Show EUR equivalents under main totals
-  var el = document.getElementById('r-eur');
-  if(el && RESULT){
-    var prixEur = chfToEur(RESULT.prixArrondiAvecEnvoi||RESULT.prixArrondi||0);
-    var totalEur = chfToEur(RESULT.prixTotal||0);
-    el.innerHTML = '<span style="color:#a0a09a;font-size:12px">≈ '+prixEur.toFixed(2)+' EUR / pièce</span>'
-      +(RESULT.pieces>1?'<span style="color:#a0a09a;font-size:12px;margin-left:12px">≈ '+totalEur.toFixed(2)+' EUR total</span>':'');
+// Formate un montant CHF dans la devise choisie
+function money(chfVal){
+  var v = parseFloat(chfVal)||0;
+  if(DEVISE_DEVIS === 'EUR'){
+    return (v * TAUX_CHF_EUR).toFixed(2) + ' EUR';
   }
+  return v.toFixed(2) + ' CHF';
+}
+
+function refreshResultDisplay(){
+  if(!RESULT) return;
+  setText('r-elec',    money(RESULT.costElec));
+  setText('r-fich',    money(RESULT.fichAmorti));
+  setText('r-design',  money(RESULT.designCost));
+  setText('r-fil',     money(RESULT.totalFil));
+  setText('r-total',   money(RESULT.totalCost));
+  setText('r-arrondi', money(RESULT.prixArrondi));
+  if(RESULT.envoi>0) setText('r-envoi', money(RESULT.envoi));
+  setText('r-arrondi-envoi', money(RESULT.prixArrondiAvecEnvoi||RESULT.prixArrondi));
+  setText('r-total-final', money(RESULT.prixTotal));
+  document.getElementById('r-items').innerHTML=(RESULT.items||[]).map(function(it){
+    return '<div class="iline"><span class="iid">'+esc(it.id)+'</span>'
+      +'<span>'+it.g+' g · '+fmtN(it.priceKg)+' CHF/kg</span>'
+      +'<span class="iacc">'+money(it.cost)+'</span></div>';
+  }).join('');
 }
 
 /* ── ACHAT BOBINES ── */
