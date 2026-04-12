@@ -1299,36 +1299,37 @@ function calcDevis(){
     var itemsOut=items.map(function(it){var c=r2((it.g/1000)*it.priceKg);totalFil+=c;return Object.assign({},it,{cost:c});});
     totalFil=r2(totalFil);
     var totalAnnexe=r2(annexes.reduce(function(s,a){return s+a.prix;},0));
+    // Marge appliquee a l'unitaire de cette piece
     var coutUnitaire=r2(costElec+fichAmorti+designCost+totalFil+totalAnnexe);
-    var sousTotal=r2(coutUnitaire*qty);
+    var avecMargePiece=r2(coutUnitaire*(1+margePct/100));
+    var prixUnitArrondi=ceil10(avecMargePiece);
+    var sousTotal=r2(prixUnitArrondi*qty);
     totalBrut=r2(totalBrut+sousTotal);
 
     piecesResult.push({
       nom:nomPiece,qty:qty,temps:temps,watts:watts,kwh:kwh,
       costElec:costElec,fichAmorti:fichAmorti,designCost:designCost,
       items:itemsOut,totalFil:totalFil,annexes:annexes,totalAnnexe:totalAnnexe,
-      coutUnitaire:coutUnitaire,sousTotal:sousTotal
+      coutUnitaire:coutUnitaire,avecMargePiece:avecMargePiece,
+      prixUnitArrondi:prixUnitArrondi,sousTotal:sousTotal
     });
   });
   if(!valid) return;
 
-  var avecMarge=r2(totalBrut*(1+margePct/100));
-  var prixArrondi=ceil10(avecMarge);
-  var prixTotal=r2(prixArrondi+envoi);
+  // Total = somme des sous-totaux (marge deja appliquee par piece)
+  var prixTotal=r2(totalBrut+envoi);
   var totalPieces=piecesResult.reduce(function(s,p){return s+p.qty;},0);
 
   RESULT={
     nom:nom,client:client,typeMarge:typeMarge,margePct:margePct,envoi:envoi,
-    pieces:totalPieces,prixArrondi:prixArrondi,prixTotal:prixTotal,
-    piecesDetail:piecesResult,totalBrut:totalBrut,avecMarge:avecMarge,
-    // compat archives
+    pieces:totalPieces,prixArrondi:totalBrut,prixTotal:prixTotal,
+    piecesDetail:piecesResult,totalBrut:totalBrut,
     items:piecesResult.reduce(function(a,p){return a.concat(p.items);},[]),
     temps:piecesResult.reduce(function(s,p){return s+p.temps;},0),
     date:Date.now()
   };
 
-  // Render result
-  // Per-piece breakdown
+  // Render result — detail par piece
   var detailHtml=piecesResult.map(function(p,i){
     var filHtml=p.items.map(function(it){
       return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
@@ -1341,7 +1342,7 @@ function calcDevis(){
         '<span>'+esc(a.desc)+(a.qty>1?' (x'+a.qty+')':'')+'</span>'+
         '<span class="iacc">'+chf(a.prix)+'</span></div>';
     }).join(''):'';
-    var label=p.nom+(p.qty>1?' (x'+p.qty+')':'');
+    var label=p.nom+(p.qty>1?' x'+p.qty:'');
     return '<div style="background:var(--bg3);border-radius:10px;margin-bottom:10px;overflow:hidden">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">'+
         '<div style="display:flex;align-items:center;gap:8px">'+
@@ -1355,16 +1356,20 @@ function calcDevis(){
         (p.fichAmorti>0?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Fichier 3D amorti</span><span>'+chf(p.fichAmorti)+'</span></div>':'')+
         (p.designCost>0?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D</span><span>'+chf(p.designCost)+'</span></div>':'')+
         filHtml+annHtml+
-        (p.qty>1?'<div class="iline" style="font-size:12px;padding:6px 10px;border-top:1px solid var(--border);margin-top:4px"><span>Cout unitaire</span><span style="font-family:var(--mono)">'+chf(p.coutUnitaire)+' x'+p.qty+'</span></div>':'')+
+        '<div class="iline" style="font-size:11px;padding:5px 10px;opacity:.7"><span>Cout brut</span><span>'+chf(p.coutUnitaire)+'</span></div>'+
+        '<div class="iline" style="font-size:12px;padding:5px 10px;border-top:1px solid var(--border);margin-top:2px"><span>+ Marge '+margePct+'% → arrondi</span><span style="font-family:var(--mono);font-weight:700;color:#fff">'+chf(p.prixUnitArrondi)+'/u</span></div>'+
+        (p.qty>1?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>x'+p.qty+' pieces</span><span style="font-family:var(--mono);font-weight:700;color:var(--accent)">'+chf(p.sousTotal)+'</span></div>':'')+
       '</div>'+
     '</div>';
   }).join('');
   document.getElementById('r-pieces-detail').innerHTML=detailHtml;
 
   setText('r-total',chf(totalBrut));
-  document.getElementById('r-marge-pct').textContent=margePct+'%';
-  setText('r-marge-val','+'+chf(r2(avecMarge-totalBrut)));
-  setText('r-arrondi',chf(prixArrondi));
+  document.getElementById('r-marge-pct').textContent='incluse par piece';
+  document.getElementById('r-marge-val').textContent='';
+  document.getElementById('r-marge-val').parentElement.style.display='none';
+  setText('r-arrondi',chf(totalBrut));
+  document.getElementById('r-arrondi').parentElement.style.display='none';
   setText('r-envoi',envoi>0?chf(envoi):'—');
   document.getElementById('r-envoi-row').style.display=envoi>0?'flex':'none';
   setText('r-total-final',chf(prixTotal));
