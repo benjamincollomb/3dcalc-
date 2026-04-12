@@ -1672,6 +1672,24 @@ function genPDF(){
       doc.setTextColor(110,110,110);
       doc.text(chf(elecMarge),210-lm,y,{align:'right'});
       y+=5;
+      // Fichier 3D amorti avec marge (si >0)
+      var fichMarge=r2((parseFloat(p.fichAmorti)||0)*coeff);
+      if(fichMarge>0){
+        doc.setTextColor(70,70,70);
+        doc.text('  • Fichier 3D amorti',lm+3,y);
+        doc.setTextColor(110,110,110);
+        doc.text(chf(fichMarge),210-lm,y,{align:'right'});
+        y+=5;
+      }
+      // Création 3D avec marge (si >0)
+      var designMarge=r2((parseFloat(p.designCost)||0)*coeff);
+      if(designMarge>0){
+        doc.setTextColor(70,70,70);
+        doc.text('  • Creation 3D',lm+3,y);
+        doc.setTextColor(110,110,110);
+        doc.text(chf(designMarge),210-lm,y,{align:'right'});
+        y+=5;
+      }
       // Filaments avec marge fondue (prix client)
       (p.items||[]).forEach(function(it){
         var priceKgAvecMarge=r2(it.priceKg*coeff);
@@ -1693,7 +1711,7 @@ function genPDF(){
         y+=5;
       });
       // Arrondi = gap entre somme des items affichés et prix en-tête (bold)
-      var sommeAff=r2(elecMarge);
+      var sommeAff=r2(elecMarge+fichMarge+designMarge);
       (p.items||[]).forEach(function(it){ sommeAff=r2(sommeAff+r2(it.cost*coeff)); });
       (p.annexes||[]).forEach(function(a){ sommeAff=r2(sommeAff+r2(a.prix*coeff)); });
       var diff=r2((p.prixUnitArrondi||0)-sommeAff);
