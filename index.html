@@ -256,9 +256,12 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
         <button class="nav-btn" id="nav-admin" data-p="admin" onclick="goPage('admin')" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:12px"><span class="nav-ic">🛡</span>Admin</button>
       </div>
       <div class="sidebar-bottom">
-        <div style="padding:2px 4px">
-          <div id="user-name" style="font-size:13px;color:#e0dcd4;font-weight:500;margin-bottom:2px"></div>
-          <span class="user-em" id="user-em"></span>
+        <div style="padding:2px 4px;display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <div>
+            <div id="user-name" style="font-size:13px;color:#e0dcd4;font-weight:500;margin-bottom:2px"></div>
+            <span class="user-em" id="user-em"></span>
+          </div>
+          <button onclick="openEditProfile()" title="Modifier mon profil" style="background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#a0a09a;cursor:pointer;padding:4px 7px;font-size:12px;flex-shrink:0">✎</button>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:4px">
           <div style="font-size:10px;color:#a0a09a;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Taux EUR/CHF</div>
@@ -553,6 +556,25 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
   </div>
 </div>
 
+<!-- MODAL PROFIL -->
+<div id="modal-profil" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-title">Mon profil</div>
+    <p style="font-size:13px;color:#a0a09a;margin-bottom:14px;margin-top:-10px">Votre nom est visible dans la barre latérale et enregistré dans Firebase.</p>
+    <div id="profil-msg" class="msg-success mt8" style="margin-bottom:10px"></div>
+    <div class="grid2">
+      <div><label class="flabel">Prénom</label><input id="profil-prenom" class="field" placeholder="Votre prénom"/></div>
+      <div><label class="flabel">Nom</label><input id="profil-nom" class="field" placeholder="Votre nom"/></div>
+    </div>
+    <label class="flabel mt8">Email</label>
+    <input id="profil-email" class="field" disabled style="opacity:.5;cursor:not-allowed"/>
+    <div class="modal-foot">
+      <button class="btn-primary" onclick="saveProfile()">Enregistrer</button>
+      <button class="btn-secondary" onclick="document.getElementById('modal-profil').classList.remove('open')">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL BOBINE -->
 <div id="modal-bob" class="modal">
   <div class="modal-box">
@@ -649,14 +671,23 @@ AUTH.onAuthStateChanged(function(u){
     // Show admin nav
     var adminNav=document.getElementById('nav-admin');
     if(adminNav) adminNav.style.display=window._IS_ADMIN?'flex':'none';
-    // Load user profile (name)
+    // Load or auto-create profile
     DB.collection('profiles').doc(u.uid).get().then(function(doc){
       if(doc.exists){
         var p=doc.data();
         var nm=((p.prenom||'')+' '+(p.nom||'')).trim();
-        if(nm) document.getElementById('user-name').textContent=nm;
+        document.getElementById('user-name').textContent=nm||u.email;
+        window._USER_PROFILE=p;
+      } else {
+        // Account exists in Auth/users but not yet in profiles -> create it
+        var newProfile={prenom:'',nom:'',email:u.email,createdAt:Date.now(),lastSeenVersion:''};
+        DB.collection('profiles').doc(u.uid).set(newProfile).catch(function(){});
+        window._USER_PROFILE=newProfile;
+        document.getElementById('user-name').textContent=u.email;
+        // Invite to fill in name
+        setTimeout(function(){openEditProfile();},800);
       }
-    }).catch(function(){});
+    }).catch(function(){document.getElementById('user-name').textContent=u.email;});
     goPage('accueil'); loadAll();
     // Check changelog after short delay
     setTimeout(function(){checkChangelog(u.uid);},1200);
@@ -761,6 +792,37 @@ function dismissChangelog(){
   });
 }
 
+function openEditProfile(){
+  var p=window._USER_PROFILE||{};
+  document.getElementById('profil-prenom').value=p.prenom||'';
+  document.getElementById('profil-nom').value=p.nom||'';
+  document.getElementById('profil-email').value=p.email||AUTH.currentUser.email||'';
+  document.getElementById('profil-msg').style.display='none';
+  document.getElementById('modal-profil').classList.add('open');
+}
+
+function saveProfile(){
+  var prenom=(document.getElementById('profil-prenom').value||'').trim();
+  var nom=(document.getElementById('profil-nom').value||'').trim();
+  var msg=document.getElementById('profil-msg');
+  if(!prenom||!nom){
+    msg.textContent='Prénom et nom sont obligatoires.';
+    msg.className='msg-error mt8'; msg.style.display='block'; return;
+  }
+  DB.collection('profiles').doc(window._UID).update({prenom:prenom,nom:nom}).then(function(){
+    window._USER_PROFILE=Object.assign(window._USER_PROFILE||{},{prenom:prenom,nom:nom});
+    var nm=(prenom+' '+nom).trim();
+    document.getElementById('user-name').textContent=nm;
+    msg.textContent='✓ Profil mis à jour !';
+    msg.className='msg-success mt8'; msg.style.display='block';
+    setTimeout(function(){document.getElementById('modal-profil').classList.remove('open');},1200);
+    toast('Profil mis à jour');
+  }).catch(function(e){
+    msg.textContent='Erreur : '+e.message;
+    msg.className='msg-error mt8'; msg.style.display='block';
+  });
+}
+
 function publishChangelog(){
   if(!window._IS_ADMIN) return;
   var version=(document.getElementById('cl-version').value||'').trim();
@@ -819,6 +881,7 @@ function renderClients(){
         +'<td class="mono">'+chf(t)+'</td>'
         +'<td>'+paidBadge+'</td>'
         +'<td>'+btnPaid+'</td>'
+        +'<td><button class="btn-del" data-id="'+a._id+'" data-action="supprimer" title="Supprimer">&times;</button></td>'
         +'</tr>';
     }).join('');
     return '<div class="card" style="margin-bottom:16px">'
@@ -829,7 +892,7 @@ function renderClients(){
       +(totalPaye>0&&totalAttente>0?' · ':'')
       +(totalAttente>0?'<span style="color:var(--warn)">'+chf(totalAttente)+' en attente</span>':'')
       +'</div></div></div>'
-      +'<div class="table-wrap"><table class="dtable"><thead><tr><th>Date</th><th>Projet</th><th>Montant</th><th>Statut</th><th></th></tr></thead>'
+      +'<div class="table-wrap"><table class="dtable"><thead><tr><th>Date</th><th>Projet</th><th>Montant</th><th>Statut</th><th></th><th></th></tr></thead>'
       +'<tbody>'+rows+'</tbody></table></div></div>';
   }).join('');
   // Event delegation for pay/annuler buttons
@@ -838,7 +901,21 @@ function renderClients(){
     if(!btn) return;
     var id=btn.getAttribute('data-id');
     var action=btn.getAttribute('data-action');
-    togglePaid(id, action==='payer');
+    if(action==='supprimer'){
+      if(!confirm('Supprimer ce devis du dossier client ?')) return;
+      DB.collection('users/'+window._UID+'/archives').doc(id).delete()
+        .then(function(){
+          loadArchs().then(function(){
+            renderClients();
+            renderCompta();
+            renderArchives();
+            renderAccueil();
+            toast('Devis supprimé');
+          });
+        }).catch(function(e){toast('Erreur : '+e.message);});
+    } else {
+      togglePaid(id, action==='payer');
+    }
   };
 }
 
