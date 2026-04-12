@@ -1568,10 +1568,12 @@ function openPdfModal(type){
       preview+='<div class="pdf-row" style="font-weight:600;color:#fff"><span>'+label+'</span><span>'+chf(p.sousTotal)+'</span></div>';
       (p.items||[]).forEach(function(it){
         var coeff2=1+(RESULT.margePct||0)/100;
-        if(p.temps>0&&it===p.items[0]){
-          var tl=p.temps+' h'+(p.qty>1?' × '+p.qty+' = '+r2(p.temps*p.qty)+' h':'');
+        if(it===p.items[0]){
+          var tempsP2=parseFloat(p.temps)||0;
+          var tl=tempsP2+' h'+(p.qty>1?' × '+p.qty+' = '+r2(tempsP2*p.qty)+' h':'');
           preview+='<div class="pdf-row" style="padding-left:12px;font-size:12px"><span>Temps : '+tl+'</span><span></span></div>';
-          if(p.costElec>0) preview+='<div class="pdf-row" style="padding-left:12px;font-size:12px"><span>Electricite</span><span>'+chf(r2(p.costElec*coeff2))+'</span></div>';
+          var elec2=r2((parseFloat(p.costElec)||0)*coeff2);
+          preview+='<div class="pdf-row" style="padding-left:12px;font-size:12px"><span>Electricite</span><span>'+chf(elec2)+'</span></div>';
         }
         var pkMarge=r2(it.priceKg*coeff2);
         var cMarge=r2(it.cost*coeff2);
@@ -1649,22 +1651,19 @@ function genPDF(){
       y+=10;
       doc.setFont('helvetica','normal'); doc.setFontSize(9);
       var coeff=1+(RESULT.margePct||0)/100;
-      // Temps d'impression
-      if(p.temps>0){
-        doc.setTextColor(70,70,70);
-        var tempsLabel='  • Temps impression : '+p.temps+' h'+(p.qty>1?' × '+p.qty+' = '+r2(p.temps*p.qty)+' h':'');
-        doc.text(tempsLabel,lm+3,y);
-        y+=5;
-      }
-      // Electricite avec marge fondue
-      if(p.costElec>0){
-        var elecMarge=r2(p.costElec*coeff);
-        doc.setTextColor(70,70,70);
-        doc.text('  • Electricite',lm+3,y);
-        doc.setTextColor(110,110,110);
-        doc.text(chf(elecMarge),210-lm,y,{align:'right'});
-        y+=5;
-      }
+      // Temps d'impression (toujours affiché)
+      var tempsP=parseFloat(p.temps)||0;
+      doc.setTextColor(70,70,70);
+      var tempsLabel='  • Temps impression : '+tempsP+' h'+(p.qty>1?' × '+p.qty+' = '+r2(tempsP*p.qty)+' h':'');
+      doc.text(tempsLabel,lm+3,y);
+      y+=5;
+      // Electricite avec marge fondue (toujours affichée)
+      var elecMarge=r2((parseFloat(p.costElec)||0)*coeff);
+      doc.setTextColor(70,70,70);
+      doc.text('  • Electricite',lm+3,y);
+      doc.setTextColor(110,110,110);
+      doc.text(chf(elecMarge),210-lm,y,{align:'right'});
+      y+=5;
       // Filaments avec marge fondue (prix client)
       (p.items||[]).forEach(function(it){
         var priceKgAvecMarge=r2(it.priceKg*coeff);
