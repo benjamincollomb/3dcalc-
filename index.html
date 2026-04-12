@@ -221,6 +221,12 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
     <div class="auth-sep"></div>
     <div id="reg-err" class="msg-err"></div>
     <div id="reg-ok" class="msg-ok"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><span class="auth-label">Prénom *</span>
+      <input id="reg-prenom" class="auth-input" type="text" placeholder="Votre prénom"/></div>
+      <div><span class="auth-label">Nom *</span>
+      <input id="reg-nom" class="auth-input" type="text" placeholder="Votre nom"/></div>
+    </div>
     <div><span class="auth-label">Email</span>
     <input id="reg-email" class="auth-input" type="email" placeholder="votre@email.com"/></div>
     <div><span class="auth-label">Mot de passe</span>
@@ -245,9 +251,15 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
         <button class="nav-btn" data-p="achat" onclick="goPage('achat')"><span class="nav-ic">🛒</span>Achat bobines</button>
         <button class="nav-btn" data-p="commandes" onclick="goPage('commandes')"><span class="nav-ic">⬡</span>Commandes <span id="badge-cmd" style="margin-left:auto;background:var(--warn);color:#000;border-radius:10px;font-size:10px;font-weight:700;padding:1px 7px;display:none"></span></button>
         <button class="nav-btn" data-p="archives" onclick="goPage('archives')"><span class="nav-ic">▤</span>Archives</button>
+        <button class="nav-btn" data-p="clients" onclick="goPage('clients')"><span class="nav-ic">👤</span>Clients</button>
+        <button class="nav-btn" data-p="compta" onclick="goPage('compta')"><span class="nav-ic">💰</span>Compta</button>
+        <button class="nav-btn" id="nav-admin" data-p="admin" onclick="goPage('admin')" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:12px"><span class="nav-ic">🛡</span>Admin</button>
       </div>
       <div class="sidebar-bottom">
-        <span class="user-em" id="user-em"></span>
+        <div style="padding:2px 4px">
+          <div id="user-name" style="font-size:13px;color:#e0dcd4;font-weight:500;margin-bottom:2px"></div>
+          <span class="user-em" id="user-em"></span>
+        </div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:4px">
           <div style="font-size:10px;color:#a0a09a;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Taux EUR/CHF</div>
           <div style="display:flex;align-items:center;gap:6px">
@@ -466,7 +478,78 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
           <div id="cmd-historique-list"></div>
         </div>
       </div>
+      <!-- CLIENTS -->
+      <div id="page-clients" class="page">
+        <div class="page-hdr"><h1>Dossiers clients</h1></div>
+        <input id="search-clients" class="field search-input" placeholder="🔎 Rechercher un client…" oninput="renderClients()"/>
+        <div id="clients-list"></div>
+      </div>
+      <!-- COMPTA -->
+      <div id="page-compta" class="page">
+        <div class="page-hdr"><h1>Comptabilité</h1></div>
+        <div class="stats" id="compta-stats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+          <div>
+            <p class="sec-title">Factures encaissées</p>
+            <div id="compta-paye-list"></div>
+          </div>
+          <div>
+            <p class="sec-title">En attente de paiement</p>
+            <div id="compta-attente-list"></div>
+          </div>
+        </div>
+      </div>
+      <!-- ADMIN -->
+      <div id="page-admin" class="page">
+        <div class="page-hdr"><h1>🛡 Administration</h1></div>
+        <div class="stats" id="admin-stats" style="grid-template-columns:repeat(3,1fr)"></div>
+        <div style="margin-top:24px">
+          <div class="flex-between" style="margin-bottom:14px">
+            <p class="sec-title" style="margin:0">Comptes utilisateurs</p>
+            <input id="search-admin" class="field" style="width:220px" placeholder="🔎 Rechercher…" oninput="renderAdminUsers()"/>
+          </div>
+          <div class="table-wrap">
+            <table class="dtable">
+              <thead><tr><th>Nom</th><th>Email</th><th>Inscrit le</th><th>Devis</th></tr></thead>
+              <tbody id="admin-users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="margin-top:28px">
+          <p class="sec-title" style="margin-bottom:14px">📋 Publier une mise à jour (changelog)</p>
+          <div class="card" style="max-width:600px">
+            <label class="flabel">Version (ex: 1.2.0)</label>
+            <input id="cl-version" class="field" placeholder="1.2.0"/>
+            <label class="flabel" style="margin-top:12px">Titre</label>
+            <input id="cl-titre" class="field" placeholder="Nouvelles fonctionnalités"/>
+            <label class="flabel" style="margin-top:12px">Fonctionnalités (une par ligne)</label>
+            <textarea id="cl-features" class="field" rows="5" style="resize:vertical;font-family:inherit" placeholder="✨ Ajout des pièces annexes&#10;🐛 Correction calcul EUR&#10;💰 Onglet Compta"></textarea>
+            <div id="cl-msg" class="msg-success mt8"></div>
+            <button class="btn-primary w100 mt12" onclick="publishChangelog()">📢 Publier la mise à jour</button>
+          </div>
+          <div style="margin-top:20px">
+            <p class="sec-title" style="margin-bottom:10px">Historique des mises à jour</p>
+            <div id="admin-changelog-list"></div>
+          </div>
+        </div>
+      </div>
     </main>
+  </div>
+</div>
+
+<!-- MODAL CHANGELOG -->
+<div id="modal-changelog" class="modal">
+  <div class="modal-box" style="max-width:480px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:22px">🚀</span>
+      <div>
+        <div class="modal-title" style="margin:0" id="cl-modal-titre">Nouveautés</div>
+        <div id="cl-modal-version" style="font-size:11px;color:#a0a09a;font-family:var(--mono)"></div>
+      </div>
+    </div>
+    <div style="height:1px;background:rgba(200,255,87,.2);margin:12px 0"></div>
+    <div id="cl-modal-features" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px"></div>
+    <button class="btn-primary w100" onclick="dismissChangelog()">✓ J'ai compris !</button>
   </div>
 </div>
 
@@ -557,12 +640,26 @@ let BOBS=[], ARCHS=[], RESULT=null, CURRENT_PDF_TYPE='DEVIS', CURRENT_ARCH_PDF=n
 AUTH.onAuthStateChanged(function(u){
   if(u){
     window._UID=u.uid;
+    window._IS_ADMIN=(u.uid==='igs4eJ2J2dQG0vARykWodWpVh2d2');
     document.getElementById('pg-login').style.display='none';
     document.getElementById('pg-register').style.display='none';
     document.getElementById('app').style.display='block';
     document.getElementById('user-em').textContent=u.email;
     document.getElementById('today').textContent=todayStr();
+    // Show admin nav
+    var adminNav=document.getElementById('nav-admin');
+    if(adminNav) adminNav.style.display=window._IS_ADMIN?'flex':'none';
+    // Load user profile (name)
+    DB.collection('profiles').doc(u.uid).get().then(function(doc){
+      if(doc.exists){
+        var p=doc.data();
+        var nm=((p.prenom||'')+' '+(p.nom||'')).trim();
+        if(nm) document.getElementById('user-name').textContent=nm;
+      }
+    }).catch(function(){});
     goPage('accueil'); loadAll();
+    // Check changelog after short delay
+    setTimeout(function(){checkChangelog(u.uid);},1200);
   } else {
     document.getElementById('app').style.display='none';
     document.getElementById('pg-login').style.display='flex';
@@ -578,12 +675,23 @@ function doLogin(){
   AUTH.signInWithEmailAndPassword(em,pw).catch(function(e){err.textContent=fbErr(e);err.style.display='block';});
 }
 function doRegister(){
-  var em=document.getElementById('reg-email').value.trim(), pw=document.getElementById('reg-pass').value;
+  var em=document.getElementById('reg-email').value.trim();
+  var pw=document.getElementById('reg-pass').value;
+  var prenom=(document.getElementById('reg-prenom').value||'').trim();
+  var nom=(document.getElementById('reg-nom').value||'').trim();
   var err=document.getElementById('reg-err'), ok=document.getElementById('reg-ok');
   err.style.display='none'; ok.style.display='none';
+  if(!prenom||!nom){err.textContent='Prénom et nom obligatoires.';err.style.display='block';return;}
   if(!em||!pw){err.textContent='Remplis tous les champs.';err.style.display='block';return;}
   if(pw.length<6){err.textContent='Mot de passe min. 6 caractères.';err.style.display='block';return;}
-  AUTH.createUserWithEmailAndPassword(em,pw).catch(function(e){err.textContent=fbErr(e);err.style.display='block';});
+  AUTH.createUserWithEmailAndPassword(em,pw).then(function(cred){
+    // Save profile
+    DB.collection('profiles').doc(cred.user.uid).set({
+      prenom:prenom, nom:nom, email:em, createdAt:Date.now(), lastSeenVersion:''
+    }).catch(function(){});
+    ok.textContent='Compte créé ! Bienvenue '+prenom+' !';
+    ok.style.display='block';
+  }).catch(function(e){err.textContent=fbErr(e);err.style.display='block';});
 }
 function doLogout(){AUTH.signOut();}
 function fbErr(e){
@@ -604,11 +712,222 @@ function goPage(name){
   if(name==='devis')initDevis();
   if(name==='commandes'){renderCommandes();}
   if(name==='achat'){renderAchat();}
+  if(name==='clients'){renderClients();}
+  if(name==='compta'){renderCompta();}
+  if(name==='admin'&&window._IS_ADMIN){renderAdmin();}
 }
 
 /* ── DATA ── */
 function loadAll(){
   loadBobs().then(function(){loadArchs().then(function(){loadCmds().then(function(){renderAccueil();});});});
+}
+
+/* ================================================== */
+var CHANGELOG_CACHE=[];
+
+function checkChangelog(uid){
+  // Get latest changelog entry
+  DB.collection('changelog').orderBy('createdAt','desc').limit(1).get().then(function(snap){
+    if(snap.empty) return;
+    var latest=snap.docs[0].data();
+    latest._id=snap.docs[0].id;
+    CHANGELOG_CACHE=[latest];
+    // Get user's last seen version
+    DB.collection('profiles').doc(uid).get().then(function(pdoc){
+      var lastSeen=(pdoc.exists&&pdoc.data().lastSeenVersion)||'';
+      if(lastSeen!==latest.version){
+        showChangelogModal(latest);
+      }
+    }).catch(function(){});
+  }).catch(function(){});
+}
+
+function showChangelogModal(entry){
+  document.getElementById('cl-modal-titre').textContent=entry.titre||'Nouveautés';
+  document.getElementById('cl-modal-version').textContent='Version '+entry.version+' · '+fmtDate(entry.createdAt);
+  var features=(entry.features||[]);
+  document.getElementById('cl-modal-features').innerHTML=features.map(function(f){
+    return '<div style="display:flex;align-items:flex-start;gap:10px;background:var(--bg3);border-radius:8px;padding:10px 12px;font-size:14px;color:#e0dcd4">'+esc(f)+'</div>';
+  }).join('');
+  document.getElementById('modal-changelog').classList.add('open');
+}
+
+function dismissChangelog(){
+  document.getElementById('modal-changelog').classList.remove('open');
+  if(!CHANGELOG_CACHE.length) return;
+  var version=CHANGELOG_CACHE[0].version;
+  DB.collection('profiles').doc(window._UID).update({lastSeenVersion:version}).catch(function(){
+    DB.collection('profiles').doc(window._UID).set({lastSeenVersion:version},{merge:true}).catch(function(){});
+  });
+}
+
+function publishChangelog(){
+  if(!window._IS_ADMIN) return;
+  var version=(document.getElementById('cl-version').value||'').trim();
+  var titre=(document.getElementById('cl-titre').value||'').trim();
+  var rawFeatures=document.getElementById('cl-features').value||'';
+  var features=rawFeatures.split('\n').map(function(f){return f.trim();}).filter(function(f){return f.length>0;});
+  var msg=document.getElementById('cl-msg');
+  if(!version||!titre||!features.length){
+    msg.textContent='Remplis tous les champs.'; msg.className='msg-error mt8'; msg.style.display='block'; return;
+  }
+  DB.collection('changelog').add({version:version,titre:titre,features:features,createdAt:Date.now()}).then(function(){
+    msg.textContent='✓ Mise à jour publiée ! Les utilisateurs verront le popup à leur prochaine connexion.';
+    msg.className='msg-success mt8'; msg.style.display='block';
+    document.getElementById('cl-version').value='';
+    document.getElementById('cl-titre').value='';
+    document.getElementById('cl-features').value='';
+    renderAdmin();
+  }).catch(function(e){
+    msg.textContent='Erreur : '+e.message; msg.className='msg-error mt8'; msg.style.display='block';
+  });
+}
+
+/* ================================================== */
+function renderClients(){
+  var q=(document.getElementById('search-clients').value||'').toLowerCase();
+  var container=document.getElementById('clients-list');
+  // Group archives by client
+  var grouped={};
+  ARCHS.forEach(function(a){
+    var client=(a.client||'Sans client').trim();
+    if(!grouped[client]) grouped[client]=[];
+    grouped[client].push(a);
+  });
+  var keys=Object.keys(grouped).sort();
+  if(q) keys=keys.filter(function(k){return k.toLowerCase().includes(q);});
+  if(!keys.length){container.innerHTML='<div class="empty">Aucun client trouvé</div>';return;}
+  container.innerHTML=keys.map(function(client){
+    var items=grouped[client];
+    var totalPaye=0, totalAttente=0;
+    items.forEach(function(a){
+      var t=a.prixTotal||r2((a.prixArrondi||0)*(a.pieces||1));
+      if(a.paid) totalPaye+=t; else totalAttente+=t;
+    });
+    totalPaye=r2(totalPaye); totalAttente=r2(totalAttente);
+    var rows=items.map(function(a){
+      var t=a.prixTotal||r2((a.prixArrondi||0)*(a.pieces||1));
+      var paidBadge=a.paid
+        ?'<span class="badge b-ok">Paye</span>'
+        :'<span class="badge b-warn">En attente</span>';
+      var btnPaid=a.paid
+        ?'<button class="btn-del" style="font-size:11px" data-id="'+a._id+'" data-action="annuler">Annuler</button>'
+        :'<button class="btn-primary" style="font-size:11px;padding:5px 12px" data-id="'+a._id+'" data-action="payer">Marquer paye</button>';
+      return '<tr>'
+        +'<td class="mono">'+fmtDate(a.date)+'</td>'
+        +'<td class="strong">'+esc(a.nom)+'</td>'
+        +'<td class="mono">'+chf(t)+'</td>'
+        +'<td>'+paidBadge+'</td>'
+        +'<td>'+btnPaid+'</td>'
+        +'</tr>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:16px">'
+      +'<div class="flex-between" style="margin-bottom:14px">'
+      +'<div><div style="font-family:var(--mono);font-size:15px;font-weight:700;color:#fff">👤 '+esc(client)+'</div>'
+      +'<div style="font-size:12px;color:#a0a09a;margin-top:3px">'+items.length+' devis · '
+      +(totalPaye>0?'<span style="color:var(--ok)">'+chf(totalPaye)+' encaissé</span>':'')
+      +(totalPaye>0&&totalAttente>0?' · ':'')
+      +(totalAttente>0?'<span style="color:var(--warn)">'+chf(totalAttente)+' en attente</span>':'')
+      +'</div></div></div>'
+      +'<div class="table-wrap"><table class="dtable"><thead><tr><th>Date</th><th>Projet</th><th>Montant</th><th>Statut</th><th></th></tr></thead>'
+      +'<tbody>'+rows+'</tbody></table></div></div>';
+  }).join('');
+  // Event delegation for pay/annuler buttons
+  container.onclick=function(e){
+    var btn=e.target.closest('[data-action]');
+    if(!btn) return;
+    var id=btn.getAttribute('data-id');
+    var action=btn.getAttribute('data-action');
+    togglePaid(id, action==='payer');
+  };
+}
+
+function togglePaid(archId, paid){
+  DB.collection('users/'+window._UID+'/archives').doc(archId).update({paid:paid,paidAt:paid?Date.now():null})
+    .then(function(){
+      var arch=ARCHS.find(function(a){return a._id===archId;});
+      if(arch){arch.paid=paid; arch.paidAt=paid?Date.now():null;}
+      renderClients();
+      renderCompta();
+      toast(paid?'✓ Marqué comme payé':'Paiement annulé');
+    }).catch(function(e){toast('Erreur: '+e.message);});
+}
+
+/* ================================================== */
+function renderCompta(){
+  var totalPaye=0, totalAttente=0, nbPaye=0, nbAttente=0;
+  ARCHS.forEach(function(a){
+    var t=a.prixTotal||r2((a.prixArrondi||0)*(a.pieces||1));
+    if(a.paid){totalPaye=r2(totalPaye+t);nbPaye++;}
+    else{totalAttente=r2(totalAttente+t);nbAttente++;}
+  });
+  var solde=r2(totalPaye-0);
+  // Stats
+  document.getElementById('compta-stats').innerHTML=
+    '<div class="stat ok"><div class="stat-lbl">Encaissé</div><div class="stat-val" style="font-size:22px">'+chf(totalPaye)+'</div><div style="font-size:11px;color:#a0a09a;margin-top:4px">'+nbPaye+' facture'+(nbPaye>1?'s':'')+'</div></div>'
+    +'<div class="stat warn"><div class="stat-lbl">En attente</div><div class="stat-val" style="font-size:22px">'+chf(totalAttente)+'</div><div style="font-size:11px;color:#a0a09a;margin-top:4px">'+nbAttente+' devis</div></div>'
+    +'<div class="stat blue"><div class="stat-lbl">Total devis</div><div class="stat-val" style="font-size:22px">'+chf(r2(totalPaye+totalAttente))+'</div><div style="font-size:11px;color:#a0a09a;margin-top:4px">'+ARCHS.length+' au total</div></div>';
+  // Lists
+  var paye=ARCHS.filter(function(a){return a.paid;}).sort(function(a,b){return (b.paidAt||b.date)-(a.paidAt||a.date);});
+  var attente=ARCHS.filter(function(a){return !a.paid;}).sort(function(a,b){return b.date-a.date;});
+  function archCard(a){
+    var t=a.prixTotal||r2((a.prixArrondi||0)*(a.pieces||1));
+    return '<div class="recent-item" style="margin-bottom:8px">'
+      +'<div class="r-info"><div class="r-nom">'+esc(a.nom)+'</div>'
+      +'<div class="r-meta">'+esc(a.client||'—')+' · '+fmtDate(a.date)+'</div></div>'
+      +'<span class="r-prix">'+chf(t)+'</span></div>';
+  }
+  document.getElementById('compta-paye-list').innerHTML=paye.length?paye.map(archCard).join(''):'<div class="empty">Aucune facture payée</div>';
+  document.getElementById('compta-attente-list').innerHTML=attente.length?attente.map(archCard).join(''):'<div class="empty">Aucune facture en attente</div>';
+}
+
+/* ================================================== */
+var ADMIN_USERS=[];
+var ADMIN_CHANGELOGS=[];
+
+function renderAdmin(){
+  if(!window._IS_ADMIN) return;
+  // Load all profiles
+  DB.collection('profiles').get().then(function(snap){
+    ADMIN_USERS=snap.docs.map(function(d){return Object.assign({_uid:d.id},d.data());});
+    document.getElementById('admin-stats').innerHTML=
+      '<div class="stat ok"><div class="stat-lbl">Utilisateurs</div><div class="stat-val">'+ADMIN_USERS.length+'</div></div>'
+      +'<div class="stat blue"><div class="stat-lbl">Mises à jour</div><div class="stat-val" id="admin-cl-count">—</div></div>'
+      +'<div class="stat"><div class="stat-lbl">Admin UID</div><div class="stat-val sm" style="font-size:10px;word-break:break-all">'+"'"+window._UID+"'"+'</div></div>';
+    renderAdminUsers();
+  }).catch(function(e){toast('Erreur profils: '+e.message);});
+  // Load changelogs
+  DB.collection('changelog').orderBy('createdAt','desc').get().then(function(snap){
+    ADMIN_CHANGELOGS=snap.docs.map(function(d){return Object.assign({_id:d.id},d.data());});
+    var cnt=document.getElementById('admin-cl-count');
+    if(cnt) cnt.textContent=ADMIN_CHANGELOGS.length;
+    document.getElementById('admin-changelog-list').innerHTML=ADMIN_CHANGELOGS.length
+      ?ADMIN_CHANGELOGS.map(function(cl){
+        return '<div class="card" style="margin-bottom:10px;padding:14px 16px">'
+          +'<div class="flex-between"><div><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">v'+esc(cl.version)+'</span>'
+          +' <span style="font-size:12px;color:#a0a09a">'+esc(cl.titre)+'</span></div>'
+          +'<span style="font-size:11px;color:#888;font-family:var(--mono)">'+fmtDate(cl.createdAt)+'</span></div>'
+          +'<div style="margin-top:8px;font-size:12px;color:#c0bcb4">'+((cl.features||[]).join(' · '))+'</div></div>';
+      }).join('')
+      :'<div class="empty">Aucune mise à jour publiée</div>';
+  }).catch(function(){});
+}
+
+function renderAdminUsers(){
+  var q=(document.getElementById('search-admin').value||'').toLowerCase();
+  var users=ADMIN_USERS.filter(function(u){
+    return !q||(u.email||'').toLowerCase().includes(q)||(u.prenom||'').toLowerCase().includes(q)||(u.nom||'').toLowerCase().includes(q);
+  });
+  document.getElementById('admin-users-tbody').innerHTML=users.length
+    ?users.map(function(u){
+      return '<tr>'
+        +'<td class="strong">'+esc((u.prenom||'')+' '+(u.nom||''))+'</td>'
+        +'<td>'+esc(u.email||'—')+'</td>'
+        +'<td class="mono">'+fmtDate(u.createdAt)+'</td>'
+        +'<td class="mono">—</td>'
+        +'</tr>';
+    }).join('')
+    :'<tr><td colspan="4"><div class="empty">Aucun utilisateur</div></td></tr>';
 }
 function loadBobs(){
   return DB.collection('users/'+window._UID+'/bobines').get().then(function(snap){
