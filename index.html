@@ -1322,10 +1322,12 @@ function calcDevis(){
 
   RESULT={
     nom:nom,client:client,typeMarge:typeMarge,margePct:margePct,envoi:envoi,
-    pieces:totalPieces,prixArrondi:totalBrut,prixTotal:prixTotal,
+    // pieces=1 car prixArrondi/prixTotal incluent DEJA toutes les quantites
+    pieces:1,piecesCount:totalPieces,
+    prixArrondi:prixTotal,prixTotal:prixTotal,
     piecesDetail:piecesResult,totalBrut:totalBrut,
     items:piecesResult.reduce(function(a,p){return a.concat(p.items);},[]),
-    temps:piecesResult.reduce(function(s,p){return s+p.temps;},0),
+    temps:piecesResult.reduce(function(s,p){return r2(s+p.temps);},0),
     date:Date.now()
   };
 
@@ -1365,6 +1367,9 @@ function calcDevis(){
   document.getElementById('r-pieces-detail').innerHTML=detailHtml;
 
   setText('r-total',chf(totalBrut));
+  // Afficher le nb de pieces total dans le titre si >1
+  var nbLabel=document.getElementById('r-pieces-count');
+  if(nbLabel) nbLabel.textContent=totalPieces>1?' ('+totalPieces+' pieces)':'';
   document.getElementById('r-marge-pct').textContent='incluse par piece';
   document.getElementById('r-marge-val').textContent='';
   document.getElementById('r-marge-val').parentElement.style.display='none';
@@ -1525,8 +1530,7 @@ function openPdfModal(type){
   if((RESULT.envoi||0)>0){
     preview+='<div class="pdf-row"><span>Frais d\'envoi</span><span>'+chf(RESULT.envoi)+'</span></div>';
   }
-  var qty=pieces;
-  var prixTotal2=r2((RESULT.prixArrondi||0)+(RESULT.envoi||0));
+  var prixTotal2=RESULT.prixTotal||r2((RESULT.prixArrondi||0)+(RESULT.envoi||0));
   preview+='<div class="pdf-row total"><span>TOTAL</span><span>'+chf(prixTotal2)+'</span></div>';
   preview+='</div>';
   document.getElementById('pdf-preview').innerHTML=preview;
@@ -1541,7 +1545,10 @@ function genPDF(){
   var prixU=RESULT.prixArrondi||0;
   var envoi=RESULT.envoi||0;
   var prixUavecEnvoi=r2(prixU+envoi);
-  var prixTotal=r2(prixUavecEnvoi*qty);
+  // Si multi-pieces, prixArrondi inclut deja tout — pas de multiplication supplementaire
+  var prixTotal=RESULT.piecesDetail&&RESULT.piecesDetail.length>1
+    ? prixUavecEnvoi
+    : r2(prixUavecEnvoi*qty);
   var totalG=0; (RESULT.items||[]).forEach(function(it){totalG+=it.g;});
   var doc=new window.jspdf.jsPDF();
   var y=20, lm=20, pw=170;
