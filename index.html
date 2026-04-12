@@ -1604,7 +1604,7 @@ function openPdfModal(type){
       preview+='<div class="pdf-row" style="font-size:12px;padding-left:12px;color:#888"><span>'+al2+'</span><span>+ '+fmtN(diff2)+' CHF</span></div>';
     }
   });
-  var prixTotal2=RESULT.prixTotal||r2((RESULT.prixArrondi||0)+(RESULT.envoi||0));
+  var prixTotal2=RESULT.prixTotal||RESULT.prixArrondi||0;
   preview+='<div class="pdf-row total"><span>TOTAL</span><span>'+chf(prixTotal2)+'</span></div>';
   preview+='</div>';
   document.getElementById('pdf-preview').innerHTML=preview;
@@ -1618,11 +1618,8 @@ function genPDF(){
   var qty=parseInt(document.getElementById('pdf-qty').value)||RESULT.pieces||1;
   var prixU=RESULT.prixArrondi||0;
   var envoi=RESULT.envoi||0;
-  var prixUavecEnvoi=r2(prixU+envoi);
-  // Si multi-pieces, prixArrondi inclut deja tout — pas de multiplication supplementaire
-  var prixTotal=RESULT.piecesDetail&&RESULT.piecesDetail.length>1
-    ? prixUavecEnvoi
-    : r2(prixUavecEnvoi*qty);
+  // prixArrondi inclut DEJA l'envoi (=totalBrut+envoi) — on ne le rajoute pas
+  var prixTotal=RESULT.prixTotal||prixU;
   var totalG=0; (RESULT.items||[]).forEach(function(it){totalG+=it.g;});
   var doc=new window.jspdf.jsPDF();
   var y=20, lm=20, pw=170;
