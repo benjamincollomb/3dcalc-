@@ -1594,8 +1594,12 @@ function openPdfModal(type){
     preview+='<div class="pdf-row"><span>Frais d\'envoi</span><span>'+chf(RESULT.envoi)+'</span></div>';
   }
   pd.forEach(function(p2){
-    var diff2=r2((p2.prixUnitArrondi||0)-(p2.avecMargePiece||0));
-    if(diff2>0){
+    var coeff3=1+(RESULT.margePct||0)/100;
+    var somme2=r2((parseFloat(p2.costElec)||0)*coeff3);
+    (p2.items||[]).forEach(function(it){ somme2=r2(somme2+r2(it.cost*coeff3)); });
+    (p2.annexes||[]).forEach(function(a){ somme2=r2(somme2+r2(a.prix*coeff3)); });
+    var diff2=r2((p2.prixUnitArrondi||0)-somme2);
+    if(diff2>0&&diff2<0.15){
       var al2=p2.qty>1?'Arrondi/u':'Arrondi';
       preview+='<div class="pdf-row" style="font-size:12px;padding-left:12px;color:#888"><span>'+al2+'</span><span>+ '+fmtN(diff2)+' CHF</span></div>';
     }
@@ -1658,13 +1662,13 @@ function genPDF(){
       y+=10;
       doc.setFont('helvetica','normal'); doc.setFontSize(9);
       var coeff=1+(RESULT.margePct||0)/100;
-      // Temps d'impression (toujours affiché)
+      // Temps d'impression
       var tempsP=parseFloat(p.temps)||0;
       doc.setTextColor(70,70,70);
       var tempsLabel='  • Temps impression : '+tempsP+' h'+(p.qty>1?' × '+p.qty+' = '+r2(tempsP*p.qty)+' h':'');
       doc.text(tempsLabel,lm+3,y);
       y+=5;
-      // Electricite avec marge fondue (toujours affichée)
+      // Electricite avec marge fondue
       var elecMarge=r2((parseFloat(p.costElec)||0)*coeff);
       doc.setTextColor(70,70,70);
       doc.text('  • Electricite',lm+3,y);
@@ -1691,18 +1695,19 @@ function genPDF(){
         doc.text(chf(prixAvecMarge),210-lm,y,{align:'right'});
         y+=5;
       });
-      // Ligne d'arrondi — affiche uniquement la difference de centimes
-      var diff=r2((p.prixUnitArrondi||0)-(p.avecMargePiece||0));
-      if(diff>0){
-        doc.setDrawColor(220,220,220); doc.setLineWidth(0.2); doc.line(lm+3,y,210-lm,y); y+=4;
-        doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
-        var arrLabel=p.qty>1?'  Arrondi/u':'  Arrondi';
-        doc.text(arrLabel,lm+3,y);
-        doc.setTextColor(80,80,80);
+      // Arrondi = gap entre somme des items affichés et prix en-tête (bold)
+      var sommeAff=r2(elecMarge);
+      (p.items||[]).forEach(function(it){ sommeAff=r2(sommeAff+r2(it.cost*coeff)); });
+      (p.annexes||[]).forEach(function(a){ sommeAff=r2(sommeAff+r2(a.prix*coeff)); });
+      var diff=r2((p.prixUnitArrondi||0)-sommeAff);
+      if(diff>0&&diff<0.15){
+        doc.setDrawColor(200,200,200); doc.setLineWidth(0.2); doc.line(lm+3,y,210-lm,y); y+=4;
+        doc.setTextColor(120,120,120); doc.setFontSize(9);
+        doc.text(p.qty>1?'  Arrondi/u':'  Arrondi',lm+3,y);
         doc.text('+ '+fmtN(diff)+' CHF',210-lm,y,{align:'right'});
-        doc.setFont('helvetica','normal');
         y+=5;
       }
+      y+=4;
     });
   } else {
     // Fallback ancienne structure
