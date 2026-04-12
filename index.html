@@ -1680,6 +1680,7 @@ function ajouterCommande(){
     nom: RESULT.nom, client: RESULT.client||'', pieces: RESULT.pieces||1,
     prixArrondi: RESULT.prixArrondi, prixTotal: RESULT.prixTotal,
     temps: RESULT.temps, items: RESULT.items||[],
+    piecesDetail: RESULT.piecesDetail||[],
     note: note, statut: 'attente', date: Date.now(), dateMaj: Date.now()
   };
   DB.collection('users/'+window._UID+'/commandes').add(data).then(function(){
@@ -1728,33 +1729,71 @@ function renderCmdList(elId, list, statut){
     el.innerHTML='<div class="empty">'+(statut==='termine'?'Aucune commande terminée':'Aucune commande ici')+'</div>';
     return;
   }
-  el.innerHTML = list.map(function(cmd){
-    var fills = (cmd.items||[]).map(function(it){return esc(it.couleur||it.id);}).join(', ');
+  el.innerHTML='';
+  list.forEach(function(cmd){
     var btns='';
     if(statut==='attente') btns='<button class="toggle-rupt" style="border-color:rgba(255,165,0,.4);color:orange" onclick="changerStatutCmd(\''+cmd._id+'\',\'cours\')">&#9654; Démarrer</button>';
     if(statut==='cours')   btns='<button class="toggle-rupt" style="border-color:rgba(87,255,154,.4);color:#57ff9a" onclick="changerStatutCmd(\''+cmd._id+'\',\'termine\')">&#10003; Terminer</button>';
-    var badge = statut==='attente'?'<span class="badge b-warn">ATTENTE</span>':statut==='cours'?'<span class="badge" style="background:rgba(255,165,0,.15);color:orange;border:1px solid rgba(255,165,0,.3)">EN COURS</span>':'<span class="badge b-ok">TERMINÉ</span>';
-    return '<div class="card" style="margin-bottom:10px">'
-      +'<div class="flex-between" style="margin-bottom:10px">'
-        +'<div>'
-          +'<div style="font-size:15px;font-weight:600;color:#fff">'+esc(cmd.nom)+'</div>'
-          +'<div style="font-size:12px;color:#a0a09a;margin-top:3px">'+esc(cmd.client||'—')+' · '+fmtDate(cmd.date)+'</div>'
+    var badge = statut==='attente'
+      ?'<span class="badge b-warn">ATTENTE</span>'
+      :statut==='cours'
+        ?'<span class="badge" style="background:rgba(255,165,0,.15);color:orange;border:1px solid rgba(255,165,0,.3)">EN COURS</span>'
+        :'<span class="badge b-ok">TERMINÉ</span>';
+
+    var card = document.createElement('div');
+    card.className='card';
+    card.style.marginBottom='10px';
+
+    // Header
+    var header='<div class="flex-between" style="margin-bottom:10px">'
+      +'<div>'
+        +'<div style="font-size:15px;font-weight:600;color:#fff">'+esc(cmd.nom)+'</div>'
+        +'<div style="font-size:12px;color:#a0a09a;margin-top:3px">'+esc(cmd.client||'—')+' · '+fmtDate(cmd.date)+'</div>'
+      +'</div>'
+      +badge
+    +'</div>';
+
+    // Stats globales
+    var stats='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'
+      +'<div class="ditem"><div class="dkey">Total pièces</div><div class="dval mono">'+(cmd.pieces||1)+'</div></div>'
+      +'<div class="ditem"><div class="dkey">Temps total</div><div class="dval mono">'+(cmd.temps?cmd.temps+'h':'—')+'</div></div>'
+      +'<div class="ditem"><div class="dkey">Total</div><div class="dval mono" style="color:var(--accent)">'+chf(cmd.prixTotal||r2((cmd.prixArrondi||0)*(cmd.pieces||1)))+'</div></div>'
+    +'</div>';
+
+    // Detail par piece si disponible
+    var piecesHtml='';
+    var pd=cmd.piecesDetail||[];
+    if(pd.length>0){
+      var rows=pd.map(function(p,pi){
+        var filNames=(p.items||[]).map(function(it){return esc(it.couleur||it.matiere||it.id);}).join(', ');
+        var label=(pi+1)+'. '+esc(p.nom)+(p.qty>1?' ×'+p.qty:'');
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border)">'
+          +'<div>'
+            +'<div style="font-size:13px;font-weight:600;color:#e0dcd4">'+label+'</div>'
+            +(filNames?'<div style="font-size:11px;color:#888480;margin-top:2px">'+filNames+'</div>':'')
+          +'</div>'
+          +'<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">'+chf(p.sousTotal)+'</span>'
+        +'</div>';
+      }).join('');
+      piecesHtml='<div style="background:var(--bg3);border-radius:8px;overflow:hidden;margin-bottom:10px">'
+        +'<div style="padding:7px 12px 5px;border-bottom:1px solid var(--border)">'
+          +'<span style="font-size:10px;font-family:var(--mono);color:#a0a09a;text-transform:uppercase;letter-spacing:.8px">Détail des pièces</span>'
         +'</div>'
-        +badge
-      +'</div>'
-      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">'
-        +'<div class="ditem"><div class="dkey">Pièces</div><div class="dval mono">'+(cmd.pieces||1)+'</div></div>'
-        +'<div class="ditem"><div class="dkey">Prix/pièce</div><div class="dval mono">'+chf(cmd.prixArrondi)+'</div></div>'
-        +'<div class="ditem"><div class="dkey">Total</div><div class="dval mono" style="color:var(--accent)">'+chf(cmd.prixTotal||r2((cmd.prixArrondi||0)*(cmd.pieces||1)))+'</div></div>'
-      +'</div>'
-      +(fills?'<div style="font-size:12px;color:#a0a09a;margin-bottom:10px">Filaments : '+fills+'</div>':'')
-      +(cmd.note?'<div style="font-size:12px;color:#c8c4bc;background:var(--bg3);border-radius:6px;padding:8px 10px;margin-bottom:10px">📝 '+esc(cmd.note)+'</div>':'')
-      +'<div style="display:flex;gap:8px">'
-        +btns
-        +'<button class="btn-del" onclick="delCmd(\''+cmd._id+'\')" >Supprimer</button>'
-      +'</div>'
+        +rows
       +'</div>';
-  }).join('');
+    } else {
+      // Ancienne structure — affiche filaments globaux
+      var fills=(cmd.items||[]).map(function(it){return esc(it.couleur||it.id);}).join(', ');
+      if(fills) piecesHtml='<div style="font-size:12px;color:#a0a09a;margin-bottom:10px">Filaments : '+fills+'</div>';
+    }
+
+    var note=cmd.note?'<div style="font-size:12px;color:#c8c4bc;background:var(--bg3);border-radius:6px;padding:8px 10px;margin-bottom:10px">Note : '+esc(cmd.note)+'</div>':'';
+
+    var actions='<div style="display:flex;gap:8px">'+btns+'<button class="btn-del" onclick="delCmd(\''+cmd._id+'\')">Supprimer</button></div>';
+
+    card.innerHTML=header+stats+piecesHtml+note+actions;
+    el.appendChild(card);
+  });
 }
 
 function changerStatutCmd(id, newStatut){
