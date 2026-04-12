@@ -1500,26 +1500,29 @@ function openPdfModal(type){
   var prixU=RESULT.prixArrondi||0;
   var totalG=0; (RESULT.items||[]).forEach(function(it){totalG+=it.g;});
   var preview='<div style="margin-bottom:12px">';
-  (RESULT.items||[]).forEach(function(it){
-    preview+='<div class="pdf-row"><span>'+esc(it.id)+' ('+esc(it.matiere||'')+' '+esc(it.couleur||'')+')</span><span>'+it.g+' g · '+fmtN(it.priceKg)+' CHF/kg</span></div>';
-  });
-  if((RESULT.annexes||[]).length>0){
-    preview+='<div style="font-size:11px;font-family:var(--mono);color:#a0a09a;text-transform:uppercase;letter-spacing:.7px;padding:8px 0 4px">Pièces annexes</div>';
-    (RESULT.annexes||[]).forEach(function(a){
-      var detail=a.qty>1?' ('+a.qty+' × '+chf(a.prixUnit)+')':'';
-      preview+='<div class="pdf-row"><span>'+esc(a.desc)+detail+'</span><span>'+chf(a.prix)+'</span></div>';
+  var pd=RESULT.piecesDetail||[];
+  if(pd.length>0){
+    pd.forEach(function(p,pi){
+      var label=(pi+1)+'. '+esc(p.nom)+(p.qty>1?' (x'+p.qty+')':'');
+      preview+='<div class="pdf-row" style="font-weight:600;color:#fff"><span>'+label+'</span><span>'+chf(p.sousTotal)+'</span></div>';
+      (p.items||[]).forEach(function(it){
+        preview+='<div class="pdf-row" style="padding-left:12px;font-size:12px"><span>'+esc(it.id)+' — '+it.g+' g</span><span>'+chf(it.cost)+'</span></div>';
+      });
+      (p.annexes||[]).forEach(function(a){
+        preview+='<div class="pdf-row" style="padding-left:12px;font-size:12px"><span>'+esc(a.desc)+(a.qty>1?' x'+a.qty:'')+'</span><span>'+chf(a.prix)+'</span></div>';
+      });
+    });
+  } else {
+    (RESULT.items||[]).forEach(function(it){
+      preview+='<div class="pdf-row"><span>'+esc(it.id)+'</span><span>'+it.g+' g · '+chf(it.cost)+'</span></div>';
     });
   }
-  preview+='<div class="pdf-row"><span>Temps d\'impression</span><span>'+RESULT.temps+' h</span></div>';
-  preview+='<div class="pdf-row"><span>Filament total</span><span>'+totalG.toFixed(1)+' g</span></div>';
-  preview+='<div class="pdf-row"><span>Prix par pièce</span><span>'+chf(prixU)+'</span></div>';
   if((RESULT.envoi||0)>0){
     preview+='<div class="pdf-row"><span>Frais d\'envoi</span><span>'+chf(RESULT.envoi)+'</span></div>';
   }
   var qty=pieces;
-  var prixAvecEnvoi=r2((RESULT.prixArrondi||0)+(RESULT.envoi||0));
-  var prixTotalFinal=r2(prixAvecEnvoi*qty);
-  preview+='<div class="pdf-row total"><span>Total ('+qty+' pièce'+(qty>1?'s':'')+')</span><span>'+chf(prixTotalFinal)+'</span></div>';
+  var prixTotal2=r2((RESULT.prixArrondi||0)+(RESULT.envoi||0));
+  preview+='<div class="pdf-row total"><span>TOTAL</span><span>'+chf(prixTotal2)+'</span></div>';
   preview+='</div>';
   document.getElementById('pdf-preview').innerHTML=preview;
   document.getElementById('modal-pdf').classList.add('open');
@@ -1558,36 +1561,53 @@ function genPDF(){
   // Ligne séparatrice
   doc.setDrawColor(200,255,87); doc.setLineWidth(0.5); doc.line(lm,y,210-lm,y); y+=8;
 
-  // Filaments
-  doc.setTextColor(40,40,40); doc.setFontSize(11); doc.setFont('helvetica','bold');
-  doc.text('Filaments utilisés',lm,y); y+=7;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  (RESULT.items||[]).forEach(function(it){
-    doc.setTextColor(60,60,60);
-    doc.text('• '+it.id,lm+3,y);
-    doc.setTextColor(100,100,100);
-    doc.text(it.g+' g   ·   '+fmtN(it.priceKg)+' CHF/kg   ·   '+chf(it.cost),lm+3,y+5);
-    y+=13;
-  });
-  y+=3;
-
-  // Pièces annexes
-  if((RESULT.annexes||[]).length>0){
+  // Detail par piece (sans marge — confidentielle)
+  var pieces_detail = RESULT.piecesDetail || [];
+  if(pieces_detail.length > 0){
     doc.setTextColor(40,40,40); doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('Pièces annexes',lm,y); y+=7;
+    doc.text('Detail des pieces',lm,y); y+=8;
+    pieces_detail.forEach(function(p,pi){
+      // Entete piece
+      doc.setFillColor(240,240,240); doc.rect(lm,y-4,pw,8,'F');
+      doc.setTextColor(40,40,40); doc.setFontSize(10); doc.setFont('helvetica','bold');
+      var pieceLabel=(pi+1)+'. '+p.nom+(p.qty>1?' (x'+p.qty+')':'');
+      doc.text(pieceLabel,lm+2,y+1);
+      doc.text(chf(p.sousTotal),210-lm,y+1,{align:'right'});
+      y+=10;
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      // Filaments de cette piece
+      (p.items||[]).forEach(function(it){
+        doc.setTextColor(70,70,70);
+        doc.text('  • '+it.id+' — '+it.g+' g',lm+3,y);
+        doc.setTextColor(110,110,110);
+        doc.text(chf(it.cost),210-lm,y,{align:'right'});
+        y+=5;
+      });
+      // Annexes de cette piece
+      (p.annexes||[]).forEach(function(a){
+        doc.setTextColor(70,70,70);
+        var al='  • '+a.desc+(a.qty>1?' x'+a.qty:'');
+        doc.text(al,lm+3,y);
+        doc.setTextColor(110,110,110);
+        doc.text(chf(a.prix),210-lm,y,{align:'right'});
+        y+=5;
+      });
+      y+=4;
+    });
+  } else {
+    // Fallback ancienne structure
+    doc.setTextColor(40,40,40); doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('Filaments utilises',lm,y); y+=7;
     doc.setFont('helvetica','normal'); doc.setFontSize(10);
-    (RESULT.annexes||[]).forEach(function(a){
-      doc.setTextColor(60,60,60);
-      var label='• '+a.desc+(a.qty>1?' ('+a.qty+' × '+chf(a.prixUnit)+')':'');
-      doc.text(label,lm+3,y);
-      doc.setTextColor(100,100,100);
-      doc.text(chf(a.prix),210-lm,y,{align:'right'});
-      y+=9;
+    (RESULT.items||[]).forEach(function(it){
+      doc.setTextColor(60,60,60); doc.text('• '+it.id,lm+3,y);
+      doc.setTextColor(100,100,100); doc.text(it.g+' g  '+chf(it.cost),210-lm,y,{align:'right'});
+      y+=8;
     });
     y+=3;
   }
 
-  // Tableau récapitulatif
+  // Recapitulatif (sans marge)
   doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(lm,y,210-lm,y); y+=7;
   doc.setFontSize(10); doc.setFont('helvetica','normal');
 
@@ -1599,13 +1619,6 @@ function genPDF(){
     y+=6;
   }
 
-  pdfRow('Temps d\'impression', RESULT.temps+' h', false);
-  pdfRow('Filament total', totalG.toFixed(1)+' g', false);
-  pdfRow('Nombre de pièces', qty+' pièce'+(qty>1?'s':''), false);
-  var sym=DEVISE_DEVIS==='EUR'?'EUR':'CHF';
-  var prixUdisp=DEVISE_DEVIS==='EUR'?(prixU*TAUX_CHF_EUR).toFixed(2)+' EUR':chf(prixU);
-  var prixTdisp=DEVISE_DEVIS==='EUR'?(prixTotal*TAUX_CHF_EUR).toFixed(2)+' EUR':chf(prixTotal);
-  pdfRow('Prix par pièce', prixUdisp, false);
   if(RESULT.envoi>0){
     var envoiDisp=DEVISE_DEVIS==='EUR'?(RESULT.envoi*TAUX_CHF_EUR).toFixed(2)+' EUR':chf(RESULT.envoi);
     pdfRow('Frais d\'envoi', envoiDisp, false);
