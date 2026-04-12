@@ -1593,6 +1593,13 @@ function openPdfModal(type){
   if((RESULT.envoi||0)>0){
     preview+='<div class="pdf-row"><span>Frais d\'envoi</span><span>'+chf(RESULT.envoi)+'</span></div>';
   }
+  pd.forEach(function(p2){
+    var diff2=r2((p2.prixUnitArrondi||0)-(p2.avecMargePiece||0));
+    if(diff2>0){
+      var al2=p2.qty>1?'Arrondi/u':'Arrondi';
+      preview+='<div class="pdf-row" style="font-size:12px;padding-left:12px;color:#888"><span>'+al2+'</span><span>+ '+fmtN(diff2)+' CHF</span></div>';
+    }
+  });
   var prixTotal2=RESULT.prixTotal||r2((RESULT.prixArrondi||0)+(RESULT.envoi||0));
   preview+='<div class="pdf-row total"><span>TOTAL</span><span>'+chf(prixTotal2)+'</span></div>';
   preview+='</div>';
@@ -1684,7 +1691,18 @@ function genPDF(){
         doc.text(chf(prixAvecMarge),210-lm,y,{align:'right'});
         y+=5;
       });
-      y+=4;
+      // Ligne d'arrondi — affiche uniquement la difference de centimes
+      var diff=r2((p.prixUnitArrondi||0)-(p.avecMargePiece||0));
+      if(diff>0){
+        doc.setDrawColor(220,220,220); doc.setLineWidth(0.2); doc.line(lm+3,y,210-lm,y); y+=4;
+        doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+        var arrLabel=p.qty>1?'  Arrondi/u':'  Arrondi';
+        doc.text(arrLabel,lm+3,y);
+        doc.setTextColor(80,80,80);
+        doc.text('+ '+fmtN(diff)+' CHF',210-lm,y,{align:'right'});
+        doc.setFont('helvetica','normal');
+        y+=5;
+      }
     });
   } else {
     // Fallback ancienne structure
