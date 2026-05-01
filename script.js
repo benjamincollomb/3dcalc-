@@ -2996,9 +2996,9 @@ function changeTimbreMonth(delta) {
   timbreMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
   renderTimbrage();
 }
-document.getElementById("timbrePrev").addEventListener("click", () => changeTimbreMonth(-1));
-document.getElementById("timbreNext").addEventListener("click", () => changeTimbreMonth(+1));
-document.getElementById("timbreToday").addEventListener("click", () => { initTimbreMonth(); renderTimbrage(); });
+document.getElementById("timbrePrev")?.addEventListener("click", () => changeTimbreMonth(-1));
+document.getElementById("timbreNext")?.addEventListener("click", () => changeTimbreMonth(+1));
+document.getElementById("timbreToday")?.addEventListener("click", () => { initTimbreMonth(); renderTimbrage(); });
 
 /* ---- Utilitaires durée ---- */
 function minutesToHM(minutes) {
@@ -3175,7 +3175,7 @@ function renderTimbrage() {
 }
 
 /* ---- Bouton DÉBUT ---- */
-document.getElementById("btnTimbreDebut").addEventListener("click", async () => {
+document.getElementById("btnTimbreDebut")?.addEventListener("click", async () => {
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
 
@@ -3203,7 +3203,7 @@ document.getElementById("btnTimbreDebut").addEventListener("click", async () => 
 });
 
 /* ---- Bouton FIN ---- */
-document.getElementById("btnTimbreFin").addEventListener("click", async () => {
+document.getElementById("btnTimbreFin")?.addEventListener("click", async () => {
   const active = getActiveSession();
   if (!active) { showToast("Aucune session en cours.", "error"); return; }
 
@@ -3286,7 +3286,7 @@ function editTimbreNotes(id) {
 }
 
 /* ---- Export PDF mensuel timbrage ---- */
-document.getElementById("btnExportTimbrePDF").addEventListener("click", async () => {
+document.getElementById("btnExportTimbrePDF")?.addEventListener("click", async () => {
   if (typeof window.jspdf === "undefined") { showToast("PDF en cours de chargement, réessaie.", "info"); return; }
 
   const monthEntries = timbrages.filter(t => (t.month || t.dateDebut?.slice(0,7)) === timbreMonth && t.dateFin);
