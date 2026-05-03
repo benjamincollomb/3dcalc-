@@ -1233,10 +1233,11 @@ function addAnnexeRowTo(card){
   var devLabel=DEVISE_DEVIS==='EUR'?' (EUR)':'';
   var row=document.createElement('div');
   row.className='annexe-row';
-  row.style.cssText='display:grid;grid-template-columns:1fr 80px 100px auto;gap:9px;align-items:end;margin-bottom:9px';
-  row.innerHTML='<div><div class="brow-lbl">Description</div><input class="field ann-desc" type="text" placeholder="ex: Vis M3, Aimant N52..."/></div>'+
+  row.style.cssText='display:grid;grid-template-columns:1fr 70px 90px auto auto;gap:9px;align-items:end;margin-bottom:9px';
+  row.innerHTML='<div><div class="brow-lbl">Description</div><input class="field ann-desc" type="text" placeholder="ex: Vis M3, Colle..."/></div>'+
     '<div><div class="brow-lbl">Qty</div><input class="field ann-qty" type="number" min="1" value="1" step="1"/></div>'+
     '<div><div class="brow-lbl">Prix unit. CHF'+devLabel+'</div><input class="field ann-prix" type="number" step="0.01" min="0" placeholder="0.00"/></div>'+
+    '<div style="padding-bottom:6px"><label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:10px;color:#a0a09a;font-family:var(--mono)"><input type="checkbox" class="ann-offert" style="accent-color:var(--accent);width:14px;height:14px"/>Offert</label></div>'+
     '<button class="btn-rmv">&times;</button>';
   row.querySelector('.btn-rmv').addEventListener('click',function(){
     row.remove();
@@ -1292,7 +1293,10 @@ function calcDevis(){
       var desc=(row.querySelector('.ann-desc').value||'').trim();
       var aqty=Math.max(1,parseInt(row.querySelector('.ann-qty').value||1));
       var pu=toCHF(parseFloat(row.querySelector('.ann-prix').value||0));
-      if(desc&&pu>0) annexes.push({desc:desc,qty:aqty,prixUnit:r2(pu),prix:r2(pu*aqty)});
+      var annOffert=row.querySelector('.ann-offert').checked;
+      if(desc&&(pu>0||annOffert)){
+        annexes.push({desc:desc,qty:aqty,prixUnit:r2(pu),prix:annOffert?0:r2(pu*aqty),prixReel:r2(pu*aqty),offert:annOffert});
+      }
     });
 
     var offertElec=card.querySelector('.piece-offert-elec').checked;
@@ -1351,6 +1355,11 @@ function calcDevis(){
         '<span class="iacc">'+chf(it.cost)+'</span></div>';
     }).join('');
     var annHtml=p.annexes.length?p.annexes.map(function(a){
+      if(a.offert){
+        return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
+          '<span>'+esc(a.desc)+(a.qty>1?' (x'+a.qty+')+':'+')+' <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span>'+
+          '<span style="text-decoration:line-through;opacity:.5">'+chf(a.prixReel||0)+'</span></div>';
+      }
       return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
         '<span>'+esc(a.desc)+(a.qty>1?' (x'+a.qty+')':'')+'</span>'+
         '<span class="iacc">'+chf(a.prix)+'</span></div>';
@@ -1751,14 +1760,21 @@ function genPDF(){
         doc.text(chf(costAvecMarge),210-lm,y,{align:'right'});
         y+=5;
       });
-      // Annexes avec marge fondue
+      // Annexes avec marge fondue (ou Offert)
       (p.annexes||[]).forEach(function(a){
-        var prixAvecMarge=r2(a.prix*coeff);
-        doc.setTextColor(70,70,70);
         var al='  • '+a.desc+(a.qty>1?' x'+a.qty:'');
-        doc.text(al,lm+3,y);
-        doc.setTextColor(110,110,110);
-        doc.text(chf(prixAvecMarge),210-lm,y,{align:'right'});
+        if(a.offert){
+          doc.setTextColor(100,100,100);
+          doc.text(al+' (Offert)',lm+3,y);
+          doc.setTextColor(100,180,100);
+          doc.text('Offert',210-lm,y,{align:'right'});
+        } else {
+          var prixAvecMarge=r2(a.prix*coeff);
+          doc.setTextColor(70,70,70);
+          doc.text(al,lm+3,y);
+          doc.setTextColor(110,110,110);
+          doc.text(chf(prixAvecMarge),210-lm,y,{align:'right'});
+        }
         y+=5;
       });
       // Arrondi = gap entre somme des items affichés et prix en-tête (bold)
