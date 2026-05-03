@@ -1166,16 +1166,18 @@ function addPieceRow(){
     '</div>'+
     '<div class="grid2">'+
       '<div><label class="flabel">Elec. (CHF/kWh)</label><input class="field piece-kwh" type="number" step="0.01" value="0.33"/></div>'+
-      '<div></div>'+
+      '<div style="display:flex;align-items:flex-end;padding-bottom:6px"><label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#a0a09a"><input type="checkbox" class="piece-offert-elec" style="accent-color:var(--accent);width:15px;height:15px"/> Offrir electricite</label></div>'+
     '</div>'+
     '<div class="grid2">'+
       '<div><label class="flabel">Prix fichier 3D</label><input class="field piece-fich" type="number" step="0.5" value="0"/></div>'+
       '<div><label class="flabel">Amorti sur (n)</label><input class="field piece-amort" type="number" value="1" min="1"/></div>'+
     '</div>'+
-    '<div class="grid2" style="margin-bottom:16px">'+
+    '<div style="margin-bottom:6px"><label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#a0a09a"><input type="checkbox" class="piece-offert-fich" style="accent-color:var(--accent);width:15px;height:15px"/> Offrir le fichier 3D</label></div>'+
+    '<div class="grid2" style="margin-bottom:6px">'+
       '<div><label class="flabel">Creation 3D (h)</label><input class="field piece-dh" type="number" step="0.1" value="0"/></div>'+
       '<div><label class="flabel">Tarif creation (CHF/h)</label><input class="field piece-dr" type="number" value="0"/></div>'+
     '</div>'+
+    '<div style="margin-bottom:16px"><label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#a0a09a"><input type="checkbox" class="piece-offert-design" style="accent-color:var(--accent);width:15px;height:15px"/> Offrir la creation 3D</label></div>'+
     // Filaments
     '<div class="flex-between" style="margin-bottom:8px">'+
       '<div class="card-title" style="margin:0">Filaments</div>'+
@@ -1293,9 +1295,15 @@ function calcDevis(){
       if(desc&&pu>0) annexes.push({desc:desc,qty:aqty,prixUnit:r2(pu),prix:r2(pu*aqty)});
     });
 
-    var costElec=r2((watts/1000)*temps*kwh);
-    var fichAmorti=r2(fichier/amorti);
-    var designCost=r2(dh*dr);
+    var offertElec=card.querySelector('.piece-offert-elec').checked;
+    var offertFich=card.querySelector('.piece-offert-fich').checked;
+    var offertDesign=card.querySelector('.piece-offert-design').checked;
+    var costElecReel=r2((watts/1000)*temps*kwh);
+    var fichAmortiReel=r2(fichier/amorti);
+    var designCostReel=r2(dh*dr);
+    var costElec=offertElec?0:costElecReel;
+    var fichAmorti=offertFich?0:fichAmortiReel;
+    var designCost=offertDesign?0:designCostReel;
     var totalFil=0;
     var itemsOut=items.map(function(it){var c=r2((it.g/1000)*it.priceKg);totalFil+=c;return Object.assign({},it,{cost:c});});
     totalFil=r2(totalFil);
@@ -1310,6 +1318,8 @@ function calcDevis(){
     piecesResult.push({
       nom:nomPiece,qty:qty,temps:temps,watts:watts,kwh:kwh,
       costElec:costElec,fichAmorti:fichAmorti,designCost:designCost,
+      costElecReel:costElecReel,fichAmortiReel:fichAmortiReel,designCostReel:designCostReel,
+      offertElec:offertElec,offertFich:offertFich,offertDesign:offertDesign,
       items:itemsOut,totalFil:totalFil,annexes:annexes,totalAnnexe:totalAnnexe,
       coutUnitaire:coutUnitaire,avecMargePiece:avecMargePiece,
       prixUnitArrondi:prixUnitArrondi,sousTotal:sousTotal
@@ -1356,9 +1366,19 @@ function calcDevis(){
       '</div>'+
       '<div style="padding:8px 6px">'+
         '<div class="iline" style="font-size:12px;padding:5px 10px"><span>Temps impression</span><span style="font-family:var(--mono)">'+p.temps+'h'+(p.qty>1?' × '+p.qty+' = '+r2(p.temps*p.qty)+'h':'')+'</span></div>'+
-        '<div class="iline" style="font-size:12px;padding:5px 10px"><span>Electricite</span><span>'+chf(p.costElec)+'</span></div>'+
-        (p.fichAmorti>0?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Fichier 3D amorti</span><span>'+chf(p.fichAmorti)+'</span></div>':'')+
-        (p.designCost>0?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D</span><span>'+chf(p.designCost)+'</span></div>':'')+
+        (p.offertElec
+          ?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Electricite <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span><span style="text-decoration:line-through;opacity:.5">'+chf(p.costElecReel||0)+'</span></div>'
+          :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Electricite</span><span>'+chf(p.costElec)+'</span></div>')+
+        (p.fichAmorti>0||p.offertFich
+          ?(p.offertFich
+            ?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Fichier 3D <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span><span style="text-decoration:line-through;opacity:.5">'+chf(p.fichAmortiReel||0)+'</span></div>'
+            :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Fichier 3D amorti</span><span>'+chf(p.fichAmorti)+'</span></div>')
+          :'')+
+        (p.designCost>0||p.offertDesign
+          ?(p.offertDesign
+            ?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span><span style="text-decoration:line-through;opacity:.5">'+chf(p.designCostReel||0)+'</span></div>'
+            :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D</span><span>'+chf(p.designCost)+'</span></div>')
+          :'')+
         filHtml+annHtml+
         '<div class="iline" style="font-size:11px;padding:5px 10px;opacity:.7"><span>Cout brut</span><span>'+chf(p.coutUnitaire)+'</span></div>'+
         '<div class="iline" style="font-size:12px;padding:5px 10px;border-top:1px solid var(--border);margin-top:2px"><span>+ Marge '+margePct+'% → arrondi</span><span style="font-family:var(--mono);font-weight:700;color:#fff">'+chf(p.prixUnitArrondi)+'/u</span></div>'+
@@ -1674,23 +1694,47 @@ function genPDF(){
       y+=5;
       // Electricite avec marge fondue
       var elecMarge=r2((parseFloat(p.costElec)||0)*coeff);
-      doc.setTextColor(70,70,70);
-      doc.text('  • Electricite',lm+3,y);
-      doc.setTextColor(110,110,110);
-      doc.text(chf(elecMarge),210-lm,y,{align:'right'});
-      y+=5;
+      // Electricite
+      if(p.offertElec){
+        var elecReelMarge=r2((parseFloat(p.costElecReel)||0)*coeff);
+        doc.setTextColor(100,100,100);
+        doc.text('  • Electricite (Offert)',lm+3,y);
+        doc.setTextColor(100,180,100);
+        doc.text('Offert',210-lm,y,{align:'right'});
+        y+=5;
+      } else {
+        doc.setTextColor(70,70,70);
+        doc.text('  • Electricite',lm+3,y);
+        doc.setTextColor(110,110,110);
+        doc.text(chf(elecMarge),210-lm,y,{align:'right'});
+        y+=5;
+      }
       // Fichier 3D amorti avec marge (si >0)
       var fichMarge=r2((parseFloat(p.fichAmorti)||0)*coeff);
-      if(fichMarge>0){
+      var fichReelMarge=r2((parseFloat(p.fichAmortiReel)||0)*coeff);
+      if(p.offertFich&&fichReelMarge>0){
+        doc.setTextColor(100,100,100);
+        doc.text('  • Fichier 3D (Offert)',lm+3,y);
+        doc.setTextColor(100,180,100);
+        doc.text('Offert',210-lm,y,{align:'right'});
+        y+=5;
+      } else if(fichMarge>0){
         doc.setTextColor(70,70,70);
         doc.text('  • Fichier 3D amorti',lm+3,y);
         doc.setTextColor(110,110,110);
         doc.text(chf(fichMarge),210-lm,y,{align:'right'});
         y+=5;
       }
-      // Création 3D avec marge (si >0)
+      // Creation 3D avec marge (si >0)
       var designMarge=r2((parseFloat(p.designCost)||0)*coeff);
-      if(designMarge>0){
+      var designReelMarge=r2((parseFloat(p.designCostReel)||0)*coeff);
+      if(p.offertDesign&&designReelMarge>0){
+        doc.setTextColor(100,100,100);
+        doc.text('  • Creation 3D (Offert)',lm+3,y);
+        doc.setTextColor(100,180,100);
+        doc.text('Offert',210-lm,y,{align:'right'});
+        y+=5;
+      } else if(designMarge>0){
         doc.setTextColor(70,70,70);
         doc.text('  • Creation 3D',lm+3,y);
         doc.setTextColor(110,110,110);
