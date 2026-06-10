@@ -394,7 +394,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
       </div>
       <!-- FOURNITURES -->
       <div id="page-fournitures" class="page">
-        <div class="page-hdr"><h1>Stock de fournitures</h1><button class="btn-primary" onclick="openModalFourniture()">+ Ajouter</button></div>
+        <div class="page-hdr"><h1>Stock — Pièces annexes</h1><button class="btn-primary" onclick="openModalFourniture()">+ Ajouter</button></div>
         <input id="search-four" class="field search-input" placeholder="🔎 Rechercher…" oninput="renderFournitures()"/>
         <div class="table-wrap">
           <table class="dtable">
@@ -1328,27 +1328,26 @@ function addPieceRow(){
     '</div>'+
     '<div class="piece-fil-rows"></div>'+
     '<p class="hint mt8" style="margin-bottom:14px">Les bobines en rupture ne sont pas proposees.</p>'+
-    // Annexes
+    // Pieces annexes d'abord, Petites fournitures ensuite
     '<div class="flex-between" style="margin-bottom:8px">'+
       '<div>'+
-        '<div class="card-title" style="margin:0">Pieces annexes</div>'+
-        '<p class="hint" style="margin-top:3px">Visserie, aimants, inserts… (hors stock)</p>'+
+        '<div class="card-title" style="margin:0">Pièces annexes <span style="font-size:10px;font-family:var(--mono);color:var(--accent);background:rgba(200,255,87,.1);border-radius:4px;padding:1px 6px">STOCK</span></div>'+
+        '<p class="hint" style="margin-top:3px">Visserie, aimants, inserts… Déduit automatiquement du stock.</p>'+
       '</div>'+
-      '<button class="btn-secondary btn-add-ann" style="font-size:12px;padding:5px 12px">+ Annexe</button>'+
+      '<button class="btn-secondary btn-add-four" style="font-size:12px;padding:5px 12px">+ Ajouter</button>'+
     '</div>'+
-    '<div class="piece-annexe-rows"></div>'+
-    '<div class="piece-ann-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune piece annexe</div>'+
-    // Séparateur Petites fournitures (stock)
+    '<div class="piece-four-rows"></div>'+
+    '<div class="piece-four-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune pièce annexe du stock</div>'+
     '<div style="height:1px;background:var(--border);margin:16px 0"></div>'+
     '<div class="flex-between" style="margin-bottom:8px">'+
       '<div>'+
-        '<div class="card-title" style="margin:0">Petites fournitures <span style="font-size:10px;font-family:var(--mono);color:var(--accent);background:rgba(200,255,87,.1);border-radius:4px;padding:1px 6px">STOCK</span></div>'+
-        '<p class="hint" style="margin-top:3px">Colle, ruban, consommables… Déduit du stock automatiquement.</p>'+
+        '<div class="card-title" style="margin:0">Petites fournitures</div>'+
+        '<p class="hint" style="margin-top:3px">Colle, ruban, consommables… (saisie libre)</p>'+
       '</div>'+
-      '<button class="btn-secondary btn-add-four" style="font-size:12px;padding:5px 12px">+ Fourniture</button>'+
+      '<button class="btn-secondary btn-add-ann" style="font-size:12px;padding:5px 12px">+ Ajouter</button>'+
     '</div>'+
-    '<div class="piece-four-rows"></div>'+
-    '<div class="piece-four-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune fourniture du stock</div>';
+    '<div class="piece-annexe-rows"></div>'+
+    '<div class="piece-ann-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune petite fourniture</div>';
 
   // Wire up add-filament button
   body.querySelector('.btn-add-fil').addEventListener('click',function(){ addFilRowTo(card); });
@@ -1622,23 +1621,38 @@ function calcDevis(){
 }
 
 function deduireStockFours(piecesDetail){
+  if(!piecesDetail||!piecesDetail.length) return;
+  // Agréger les quantités à déduire par fourniture
   var updates={};
-  (piecesDetail||[]).forEach(function(p){
+  piecesDetail.forEach(function(p){
     (p.fours||[]).forEach(function(f){
-      if(!f.offert&&f.id){
-        updates[f.id]=(updates[f.id]||0)+f.qty;
+      if(!f.offert && f.id && f.qty>0){
+        updates[f.id]=(updates[f.id]||0)+(f.qty||1);
       }
     });
   });
-  Object.keys(updates).forEach(function(fid){
+  var ids=Object.keys(updates);
+  if(!ids.length) return;
+  console.log('Déduction stock:', updates);
+  ids.forEach(function(fid){
     var four=FOURS.find(function(x){return x._id===fid;});
     if(four){
-      var newStock=Math.max(0,(four.stock||0)-updates[fid]);
+      var newStock=Math.max(0,(parseInt(four.stock)||0)-updates[fid]);
+      console.log('Stock',fid,':',four.stock,'->',newStock);
       DB.collection('users/'+window._UID+'/fournitures').doc(fid)
-        .update({stock:newStock}).then(function(){four.stock=newStock;}).catch(function(){});
+        .update({stock:newStock})
+        .then(function(){
+          four.stock=newStock;
+          loadFournitures().then(function(){
+            var page=document.getElementById('page-fournitures');
+            if(page&&page.classList.contains('active')) renderFournitures();
+          });
+        })
+        .catch(function(e){ console.error('Erreur déduction stock:', e); });
+    } else {
+      console.warn('Fourniture non trouvée en mémoire:', fid);
     }
   });
-  setTimeout(function(){loadFournitures().then(function(){renderFournitures&&renderFournitures();});},500);
 }
 
 function archiverDevis(){
@@ -1984,7 +1998,7 @@ function genPDF(){
         doc.text(chf(costAvecMarge),210-lm,y,{align:'right'});
         y+=5;
       });
-      // Annexes avec marge fondue (ou Offert)
+      // Petites fournitures libres avec marge fondue (ou Offert)
       (p.annexes||[]).forEach(function(a){
         var al='  • '+a.desc+(a.qty>1?' x'+a.qty:'');
         if(a.offert){
