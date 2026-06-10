@@ -248,6 +248,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
         <button class="nav-btn active" data-p="accueil" onclick="goPage('accueil')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Accueil</button>
         <button class="nav-btn" data-p="devis" onclick="goPage('devis')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Nouveau devis</button>
         <button class="nav-btn" data-p="bobines" onclick="goPage('bobines')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></span>Bobines</button>
+        <button class="nav-btn" data-p="fournitures" onclick="goPage('fournitures')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>Fournitures</button>
         <button class="nav-btn" data-p="achat" onclick="goPage('achat')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>Achat bobines</button>
         <button class="nav-btn" data-p="commandes" onclick="goPage('commandes')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>Commandes <span id="badge-cmd" style="margin-left:auto;background:var(--warn);color:#000;border-radius:10px;font-size:10px;font-weight:700;padding:1px 7px;display:none"></span></button>
         <button class="nav-btn" data-p="archives" onclick="goPage('archives')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span>Archives</button>
@@ -388,6 +389,17 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
           <table class="dtable">
             <thead><tr><th>ID</th><th>Marque</th><th>Matière</th><th>Couleur</th><th>Prix/kg</th><th>Diam.</th><th>Poids</th><th>Statut</th><th>Lien</th><th></th></tr></thead>
             <tbody id="bob-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- FOURNITURES -->
+      <div id="page-fournitures" class="page">
+        <div class="page-hdr"><h1>Stock de fournitures</h1><button class="btn-primary" onclick="openModalFourniture()">+ Ajouter</button></div>
+        <input id="search-four" class="field search-input" placeholder="🔎 Rechercher…" oninput="renderFournitures()"/>
+        <div class="table-wrap">
+          <table class="dtable">
+            <thead><tr><th>Référence</th><th>Description</th><th>Prix achat</th><th>Prix vente</th><th>Stock</th><th>Statut</th><th>Lien</th><th></th></tr></thead>
+            <tbody id="four-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -581,6 +593,33 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
   </div>
 </div>
 
+<!-- MODAL FOURNITURE -->
+<div id="modal-four" class="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="mf-title">+ Nouvelle fourniture</div>
+    <div id="mf-err" class="msg-err" style="margin-bottom:10px"></div>
+    <label class="flabel">Référence *</label><input id="f-ref" class="field" placeholder="ex: VIS-M3-10, COLLE-UHU…"/>
+    <label class="flabel mt8">Description *</label><input id="f-desc" class="field" placeholder="ex: Vis M3×10mm tête cylindrique"/>
+    <div class="grid2">
+      <div><label class="flabel">Prix d'achat (CHF/u)</label><input id="f-prix-achat" class="field" type="number" step="0.01" placeholder="0.10"/></div>
+      <div><label class="flabel">Prix de vente (CHF/u)</label><input id="f-prix-vente" class="field" type="number" step="0.01" placeholder="0.25"/></div>
+    </div>
+    <div class="grid2">
+      <div><label class="flabel">Stock actuel (unités)</label><input id="f-stock" class="field" type="number" min="0" value="0" placeholder="0"/></div>
+      <div><label class="flabel">Stock minimum alerte</label><input id="f-stock-min" class="field" type="number" min="0" value="5" placeholder="5"/></div>
+    </div>
+    <label class="flabel mt8">Lien de commande</label><input id="f-lien" class="field" placeholder="https://…"/>
+    <label class="flabel" style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-top:12px">
+      <input type="checkbox" id="f-rupt" style="width:15px;height:15px;accent-color:var(--warn)"/>
+      <span>En rupture de stock</span>
+    </label>
+    <div class="modal-foot">
+      <button class="btn-primary" onclick="saveFourniture()">Enregistrer</button>
+      <button class="btn-secondary" onclick="closeModalFourniture()">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PDF -->
 <div id="modal-pdf" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal-box">
@@ -627,7 +666,7 @@ firebase.initializeApp({
   appId:"1:643000650232:web:bd3c2752f0349bfbccee0d"
 });
 const AUTH=firebase.auth(), DB=firebase.firestore();
-let BOBS=[], ARCHS=[], RESULT=null, CURRENT_PDF_TYPE='DEVIS', CURRENT_ARCH_PDF=null;
+let BOBS=[], ARCHS=[], FOURS=[], RESULT=null, CURRENT_PDF_TYPE='DEVIS', CURRENT_ARCH_PDF=null;
 
 /* ── AUTH ── */
 AUTH.onAuthStateChanged(function(u){
@@ -717,11 +756,12 @@ function goPage(name){
   if(name==='clients'){renderClients();}
   if(name==='compta'){renderCompta();}
   if(name==='admin'&&window._IS_ADMIN){renderAdmin();}
+  if(name==='fournitures'){renderFournitures();}
 }
 
 /* ── DATA ── */
 function loadAll(){
-  loadBobs().then(function(){loadArchs().then(function(){loadCmds().then(function(){renderAccueil();});});});
+  loadBobs().then(function(){loadArchs().then(function(){loadCmds().then(function(){loadFournitures().then(function(){renderAccueil();});});});});
 }
 
 /* ================================================== */
@@ -988,6 +1028,109 @@ function renderAdminUsers(){
     }).join('')
     :'<tr><td colspan="4"><div class="empty">Aucun utilisateur</div></td></tr>';
 }
+/* == FOURNITURES == */
+function loadFournitures(){
+  return DB.collection('users/'+window._UID+'/fournitures').get().then(function(snap){
+    FOURS=snap.docs.map(function(d){return Object.assign({_id:d.id},d.data());});
+  }).catch(function(){FOURS=[];});
+}
+
+function renderFournitures(){
+  var q=(document.getElementById('search-four').value||'').toLowerCase();
+  var el=document.getElementById('four-tbody'); if(!el)return;
+  var rows=FOURS.filter(function(f){return !q||JSON.stringify(f).toLowerCase().includes(q);});
+  if(!rows.length){el.innerHTML='<tr><td colspan="8"><div class="empty">Aucune fourniture enregistrée</div></td></tr>';return;}
+  rows.sort(function(a,b){return (a.ref||'').localeCompare(b.ref||'');});
+  el.onclick=function(e){
+    var btn=e.target.closest('[data-action]'); if(!btn)return;
+    var id=btn.getAttribute('data-id');
+    if(btn.getAttribute('data-action')==='edit') editFourniture(id);
+    else delFourniture(id);
+  };
+  el.innerHTML=rows.map(function(f){
+    var stockBas=(f.stock||0)<=(f.stockMin||5)&&!f.rupture;
+    var statutHtml=f.rupture
+      ?'<span class="badge" style="background:rgba(255,107,53,.15);color:var(--warn);border:1px solid rgba(255,107,53,.3)">Rupture</span>'
+      :stockBas
+        ?'<span class="badge" style="background:rgba(255,165,0,.15);color:orange;border:1px solid rgba(255,165,0,.3)">Stock bas</span>'
+        :'<span class="badge b-ok">En stock</span>';
+    var lienHtml=f.lien?'<a href="'+esc(f.lien)+'" target="_blank" style="color:var(--accent);font-size:12px;text-decoration:none">Commander</a>':'—';
+    return '<tr>'
+      +'<td class="mono" style="font-weight:600;color:#fff">'+esc(f.ref||'—')+'</td>'
+      +'<td>'+esc(f.desc||'—')+'</td>'
+      +'<td class="mono">'+((f.prixAchat||0).toFixed(2))+' CHF</td>'
+      +'<td class="mono" style="color:var(--accent);font-weight:600">'+((f.prixVente||0).toFixed(2))+' CHF</td>'
+      +'<td class="mono" style="color:'+(stockBas?'orange':'inherit')+'">'+((f.stock||0))+' u</td>'
+      +'<td>'+statutHtml+'</td>'
+      +'<td>'+lienHtml+'</td>'
+      +'<td style="display:flex;gap:6px">'
+        +'<button class="toggle-rupt" style="border-color:rgba(200,255,87,.3);color:#c8ff57" data-id="'+esc(f._id)+'" data-action="edit">Modifier</button>'
+        +'<button class="toggle-rupt" style="border-color:rgba(255,107,53,.3);color:var(--warn)" data-id="'+esc(f._id)+'" data-action="del">Supprimer</button>'
+      +'</td>'
+    +'</tr>';
+  }).join('');
+}
+
+var _EDIT_FOUR_ID=null;
+function openModalFourniture(){
+  _EDIT_FOUR_ID=null;
+  document.getElementById('mf-title').textContent='+ Nouvelle fourniture';
+  document.getElementById('mf-err').style.display='none';
+  ['f-ref','f-desc','f-lien'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f-prix-achat').value='0';
+  document.getElementById('f-prix-vente').value='0';
+  document.getElementById('f-stock').value='0';
+  document.getElementById('f-stock-min').value='5';
+  document.getElementById('f-rupt').checked=false;
+  document.getElementById('modal-four').classList.add('open');
+}
+function closeModalFourniture(){
+  document.getElementById('modal-four').classList.remove('open');
+}
+function editFourniture(id){
+  var f=FOURS.find(function(x){return x._id===id;}); if(!f)return;
+  _EDIT_FOUR_ID=id;
+  document.getElementById('mf-title').textContent='✎ Modifier la fourniture';
+  document.getElementById('mf-err').style.display='none';
+  document.getElementById('f-ref').value=f.ref||'';
+  document.getElementById('f-desc').value=f.desc||'';
+  document.getElementById('f-prix-achat').value=f.prixAchat||0;
+  document.getElementById('f-prix-vente').value=f.prixVente||0;
+  document.getElementById('f-stock').value=f.stock||0;
+  document.getElementById('f-stock-min').value=f.stockMin||5;
+  document.getElementById('f-lien').value=f.lien||'';
+  document.getElementById('f-rupt').checked=!!f.rupture;
+  document.getElementById('modal-four').classList.add('open');
+}
+function saveFourniture(){
+  var ref=(document.getElementById('f-ref').value||'').trim().toUpperCase();
+  var desc=(document.getElementById('f-desc').value||'').trim();
+  var errEl=document.getElementById('mf-err');
+  if(!ref||!desc){errEl.textContent='Référence et description obligatoires.';errEl.style.display='block';return;}
+  var data={
+    ref:ref, desc:desc,
+    prixAchat:parseFloat(document.getElementById('f-prix-achat').value)||0,
+    prixVente:parseFloat(document.getElementById('f-prix-vente').value)||0,
+    stock:parseInt(document.getElementById('f-stock').value)||0,
+    stockMin:parseInt(document.getElementById('f-stock-min').value)||5,
+    lien:(document.getElementById('f-lien').value||'').trim(),
+    rupture:document.getElementById('f-rupt').checked,
+    updatedAt:Date.now()
+  };
+  var col=DB.collection('users/'+window._UID+'/fournitures');
+  var prom=_EDIT_FOUR_ID ? col.doc(_EDIT_FOUR_ID).update(data) : col.add(Object.assign({createdAt:Date.now()},data));
+  prom.then(function(){
+    loadFournitures().then(function(){closeModalFourniture();renderFournitures();toast(_EDIT_FOUR_ID?'Modifiée ✓':'Fourniture ajoutée ✓');});
+  }).catch(function(e){errEl.textContent='Erreur : '+e.message;errEl.style.display='block';});
+}
+function delFourniture(id){
+  if(!confirm('Supprimer cette fourniture ?'))return;
+  DB.collection('users/'+window._UID+'/fournitures').doc(id).delete()
+    .then(function(){loadFournitures().then(function(){renderFournitures();toast('Supprimée');});})
+    .catch(function(e){alert('Erreur : '+e.message);});
+}
+/* == /FOURNITURES == */
+
 function loadBobs(){
   return DB.collection('users/'+window._UID+'/bobines').get().then(function(snap){
     BOBS=snap.docs.map(function(d){return Object.assign({_id:d.id},d.data());});
@@ -1189,17 +1332,30 @@ function addPieceRow(){
     '<div class="flex-between" style="margin-bottom:8px">'+
       '<div>'+
         '<div class="card-title" style="margin:0">Pieces annexes</div>'+
-        '<p class="hint" style="margin-top:3px">Visserie, aimants, inserts…</p>'+
+        '<p class="hint" style="margin-top:3px">Visserie, aimants, inserts… (hors stock)</p>'+
       '</div>'+
       '<button class="btn-secondary btn-add-ann" style="font-size:12px;padding:5px 12px">+ Annexe</button>'+
     '</div>'+
     '<div class="piece-annexe-rows"></div>'+
-    '<div class="piece-ann-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune piece annexe</div>';
+    '<div class="piece-ann-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune piece annexe</div>'+
+    // Séparateur Petites fournitures (stock)
+    '<div style="height:1px;background:var(--border);margin:16px 0"></div>'+
+    '<div class="flex-between" style="margin-bottom:8px">'+
+      '<div>'+
+        '<div class="card-title" style="margin:0">Petites fournitures <span style="font-size:10px;font-family:var(--mono);color:var(--accent);background:rgba(200,255,87,.1);border-radius:4px;padding:1px 6px">STOCK</span></div>'+
+        '<p class="hint" style="margin-top:3px">Colle, ruban, consommables… Déduit du stock automatiquement.</p>'+
+      '</div>'+
+      '<button class="btn-secondary btn-add-four" style="font-size:12px;padding:5px 12px">+ Fourniture</button>'+
+    '</div>'+
+    '<div class="piece-four-rows"></div>'+
+    '<div class="piece-four-empty" style="font-size:12px;color:#888480;font-family:var(--mono);padding:4px 0">Aucune fourniture du stock</div>';
 
   // Wire up add-filament button
   body.querySelector('.btn-add-fil').addEventListener('click',function(){ addFilRowTo(card); });
   // Wire up add-annexe button
   body.querySelector('.btn-add-ann').addEventListener('click',function(){ addAnnexeRowTo(card); });
+  // Wire up add-fourniture button
+  body.querySelector('.btn-add-four').addEventListener('click',function(){ addFourRowTo(card); });
 
   card.appendChild(header);
   card.appendChild(body);
@@ -1246,6 +1402,30 @@ function addAnnexeRowTo(card){
   container.appendChild(row);
 }
 
+function addFourRowTo(card){
+  var container=card.querySelector('.piece-four-rows');
+  var empty=card.querySelector('.piece-four-empty');
+  if(empty) empty.style.display='none';
+  var dispo=FOURS.filter(function(f){return !f.rupture&&(f.stock||0)>0;});
+  var opts=dispo.length
+    ?'<option value="">— choisir —</option>'+dispo.map(function(f){
+        return '<option value="'+esc(f._id)+'">'+esc(f.ref)+' — '+esc(f.desc)+'  ('+f.stock+'u · '+parseFloat(f.prixVente||0).toFixed(2)+' CHF/u)</option>';
+      }).join('')
+    :'<option value="">Aucune fourniture en stock</option>';
+  var row=document.createElement('div');
+  row.className='four-row';
+  row.style.cssText='display:grid;grid-template-columns:1fr 90px auto auto;gap:9px;align-items:end;margin-bottom:9px';
+  row.innerHTML='<div><div class="brow-lbl">Fourniture (stock)</div><select class="field four-sel">'+opts+'</select></div>'+
+    '<div><div class="brow-lbl">Quantité</div><input class="field four-qty" type="number" min="1" value="1" step="1"/></div>'+
+    '<div style="padding-bottom:6px"><label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:10px;color:#a0a09a;font-family:var(--mono)"><input type="checkbox" class="four-offert" style="accent-color:var(--accent);width:14px;height:14px"/>Offert</label></div>'+
+    '<button class="btn-rmv">&times;</button>';
+  row.querySelector('.btn-rmv').addEventListener('click',function(){
+    row.remove();
+    if(!container.querySelectorAll('.four-row').length&&empty) empty.style.display='block';
+  });
+  container.appendChild(row);
+}
+
 function calcDevis(){
   document.getElementById('d-err').style.display='none';
   document.getElementById('result-card').classList.add('hidden');
@@ -1287,6 +1467,18 @@ function calcDevis(){
     });
     if(!items.length){showErrDiv('d-err','Ajoute au moins un filament pour "'+nomPiece+'".');valid=false;return;}
 
+    // Petites fournitures (stock)
+    var fours=[];
+    card.querySelectorAll('.four-row').forEach(function(row){
+      var id=(row.querySelector('.four-sel').value||'').trim();
+      var qty=Math.max(1,parseInt(row.querySelector('.four-qty').value||1));
+      var offert=row.querySelector('.four-offert').checked;
+      if(id){
+        var f=FOURS.find(function(x){return x._id===id;});
+        if(f) fours.push({id:id,ref:f.ref,desc:f.desc,qty:qty,prixUnit:parseFloat(f.prixVente||0),prix:offert?0:r2(parseFloat(f.prixVente||0)*qty),prixReel:r2(parseFloat(f.prixVente||0)*qty),offert:offert});
+      }
+    });
+    var totalFours=r2(fours.reduce(function(s,f){return s+f.prix;},0));
     // Annexes
     var annexes=[];
     card.querySelectorAll('.annexe-row').forEach(function(row){
@@ -1313,7 +1505,7 @@ function calcDevis(){
     totalFil=r2(totalFil);
     var totalAnnexe=r2(annexes.reduce(function(s,a){return s+a.prix;},0));
     // Marge appliquee a l'unitaire de cette piece
-    var coutUnitaire=r2(costElec+fichAmorti+designCost+totalFil+totalAnnexe);
+    var coutUnitaire=r2(costElec+fichAmorti+designCost+totalFil+totalAnnexe+totalFours);
     var avecMargePiece=r2(coutUnitaire*(1+margePct/100));
     var prixUnitArrondi=ceil10(avecMargePiece);
     var sousTotal=r2(prixUnitArrondi*qty);
@@ -1326,7 +1518,8 @@ function calcDevis(){
       offertElec:offertElec,offertFich:offertFich,offertDesign:offertDesign,
       items:itemsOut,totalFil:totalFil,annexes:annexes,totalAnnexe:totalAnnexe,
       coutUnitaire:coutUnitaire,avecMargePiece:avecMargePiece,
-      prixUnitArrondi:prixUnitArrondi,sousTotal:sousTotal
+      prixUnitArrondi:prixUnitArrondi,sousTotal:sousTotal,
+      fours:fours,totalFours:totalFours
     });
   });
   if(!valid) return;
@@ -1354,6 +1547,16 @@ function calcDevis(){
         '<span>'+it.g+' g</span>'+
         '<span class="iacc">'+chf(it.cost)+'</span></div>';
     }).join('');
+    var fourHtml=(p.fours||[]).length?(p.fours||[]).map(function(f){
+      if(f.offert){
+        return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
+          '<span>'+esc(f.ref)+(f.qty>1?' x'+f.qty:'')+'<span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono);margin-left:5px">OFFERT</span></span>'+
+          '<span style="text-decoration:line-through;opacity:.5">'+chf(f.prixReel||0)+'</span></div>';
+      }
+      return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
+        '<span>'+esc(f.ref)+(f.qty>1?' x'+f.qty:'')+'</span>'+
+        '<span class="iacc">'+chf(f.prix)+'</span></div>';
+    }).join(''):'';
     var annHtml=p.annexes.length?p.annexes.map(function(a){
       if(a.offert){
         return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
@@ -1388,7 +1591,7 @@ function calcDevis(){
             ?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span><span style="text-decoration:line-through;opacity:.5">'+chf(p.designCostReel||0)+'</span></div>'
             :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D</span><span>'+chf(p.designCost)+'</span></div>')
           :'')+
-        filHtml+annHtml+
+        filHtml+annHtml+fourHtml+
         '<div class="iline" style="font-size:11px;padding:5px 10px;opacity:.7"><span>Cout brut</span><span>'+chf(p.coutUnitaire)+'</span></div>'+
         '<div class="iline" style="font-size:12px;padding:5px 10px;border-top:1px solid var(--border);margin-top:2px"><span>+ Marge '+margePct+'% → arrondi</span><span style="font-family:var(--mono);font-weight:700;color:#fff">'+chf(p.prixUnitArrondi)+'/u</span></div>'+
         (p.qty>1?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>x'+p.qty+' pieces</span><span style="font-family:var(--mono);font-weight:700;color:var(--accent)">'+chf(p.sousTotal)+'</span></div>':'')+
@@ -1418,10 +1621,31 @@ function calcDevis(){
   document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+function deduireStockFours(piecesDetail){
+  var updates={};
+  (piecesDetail||[]).forEach(function(p){
+    (p.fours||[]).forEach(function(f){
+      if(!f.offert&&f.id){
+        updates[f.id]=(updates[f.id]||0)+f.qty;
+      }
+    });
+  });
+  Object.keys(updates).forEach(function(fid){
+    var four=FOURS.find(function(x){return x._id===fid;});
+    if(four){
+      var newStock=Math.max(0,(four.stock||0)-updates[fid]);
+      DB.collection('users/'+window._UID+'/fournitures').doc(fid)
+        .update({stock:newStock}).then(function(){four.stock=newStock;}).catch(function(){});
+    }
+  });
+  setTimeout(function(){loadFournitures().then(function(){renderFournitures&&renderFournitures();});},500);
+}
+
 function archiverDevis(){
   if(!RESULT)return;
   document.getElementById('arch-msg').style.display='none';
   document.getElementById('arch-err').style.display='none';
+  deduireStockFours(RESULT.piecesDetail);
   DB.collection('users/'+window._UID+'/archives').add(RESULT)
     .then(function(){
       loadArchs().then(function(){
