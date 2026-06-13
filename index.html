@@ -2155,6 +2155,23 @@ function genPDF(){
         doc.text(chf(costAvecMarge),210-lm,y,{align:'right'});
         y+=5;
       });
+      // Pièces annexes stock (fours) avec marge fondue (ou Offert)
+      (p.fours||[]).forEach(function(f){
+        var fl='  • '+f.ref+(f.qty>1?' x'+f.qty:'');
+        if(f.offert){
+          doc.setTextColor(100,100,100);
+          doc.text(fl+' (Offert)',lm+3,y);
+          doc.setTextColor(100,180,100);
+          doc.text('Offert',210-lm,y,{align:'right'});
+        } else {
+          var fprix=r2((f.prixUnit||0)*f.qty*coeff);
+          doc.setTextColor(70,70,70);
+          doc.text(fl,lm+3,y);
+          doc.setTextColor(110,110,110);
+          doc.text(chf(fprix),210-lm,y,{align:'right'});
+        }
+        y+=5;
+      });
       // Petites fournitures libres avec marge fondue (ou Offert)
       (p.annexes||[]).forEach(function(a){
         var al='  • '+a.desc+(a.qty>1?' x'+a.qty:'');
@@ -2175,6 +2192,7 @@ function genPDF(){
       // Arrondi = gap entre somme des items affichés et prix en-tête (bold)
       var sommeAff=r2(elecMarge+fichMarge+designMarge);
       (p.items||[]).forEach(function(it){ sommeAff=r2(sommeAff+r2(it.cost*coeff)); });
+      (p.fours||[]).forEach(function(f){ if(!f.offert) sommeAff=r2(sommeAff+r2((f.prixUnit||0)*f.qty*coeff)); });
       (p.annexes||[]).forEach(function(a){ sommeAff=r2(sommeAff+r2(a.prix*coeff)); });
       var diff=r2(prixUnitArr-sommeAff);
       if(diff>0&&diff<0.15){
