@@ -1618,27 +1618,27 @@ function calcDevis(){
       return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
         '<span class="iid">'+esc(it.id)+'</span>'+
         '<span>'+it.g+' g</span>'+
-        '<span class="iacc">'+chf(it.cost)+'</span></div>';
+        '<span class="iacc">'+money(it.cost)+'</span></div>';
     }).join('');
     var fourHtml=(p.fours||[]).length?(p.fours||[]).map(function(f){
       if(f.offert){
         return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
           '<span>'+esc(f.ref)+(f.qty>1?' x'+f.qty:'')+'<span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono);margin-left:5px">OFFERT</span></span>'+
-          '<span style="text-decoration:line-through;opacity:.5">'+chf(f.prixReel||0)+'</span></div>';
+          '<span style="text-decoration:line-through;opacity:.5">'+money(f.prixReel||0)+'</span></div>';
       }
       return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
         '<span>'+esc(f.ref)+(f.qty>1?' x'+f.qty:'')+'</span>'+
-        '<span class="iacc">'+chf(f.prix)+'</span></div>';
+        '<span class="iacc">'+money(f.prix)+'</span></div>';
     }).join(''):'';
     var annHtml=p.annexes.length?p.annexes.map(function(a){
       if(a.offert){
         return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
           '<span>'+esc(a.desc)+(a.qty>1?' (x'+a.qty+')+':'+')+' <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span>'+
-          '<span style="text-decoration:line-through;opacity:.5">'+chf(a.prixReel||0)+'</span></div>';
+          '<span style="text-decoration:line-through;opacity:.5">'+money(a.prixReel||0)+'</span></div>';
       }
       return '<div class="iline" style="font-size:12px;padding:5px 10px">'+
         '<span>'+esc(a.desc)+(a.qty>1?' (x'+a.qty+')':'')+'</span>'+
-        '<span class="iacc">'+chf(a.prix)+'</span></div>';
+        '<span class="iacc">'+money(a.prix)+'</span></div>';
     }).join(''):'';
     var label=p.nom+(p.qty>1?' x'+p.qty:'');
     return '<div style="background:var(--bg3);border-radius:10px;margin-bottom:10px;overflow:hidden">'+
@@ -1647,27 +1647,27 @@ function calcDevis(){
           '<span style="width:22px;height:22px;border-radius:50%;background:rgba(200,255,87,.15);border:1px solid rgba(200,255,87,.3);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent)">'+(i+1)+'</span>'+
           '<span style="font-weight:600;color:#fff;font-size:13px">'+esc(label)+'</span>'+
         '</div>'+
-        '<span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)">'+chf(p.sousTotal)+'</span>'+
+        '<span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)">'+money(p.sousTotal)+'</span>'+
       '</div>'+
       '<div style="padding:8px 6px">'+
         '<div class="iline" style="font-size:12px;padding:5px 10px"><span>Temps impression</span><span style="font-family:var(--mono)">'+p.temps+'h'+(p.qty>1?' × '+p.qty+' = '+r2(p.temps*p.qty)+'h':'')+'</span></div>'+
         (p.offertElec
           ?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Electricite <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span><span style="text-decoration:line-through;opacity:.5">'+chf(p.costElecReel||0)+'</span></div>'
-          :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Electricite</span><span>'+chf(p.costElec)+'</span></div>')+
+          :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Electricite</span><span>'+money(p.costElec)+'</span></div>')+
         (p.fichAmorti>0||p.offertFich
           ?(p.offertFich
             ?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Fichier 3D <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span><span style="text-decoration:line-through;opacity:.5">'+chf(p.fichAmortiReel||0)+'</span></div>'
-            :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Fichier 3D amorti</span><span>'+chf(p.fichAmorti)+'</span></div>')
+            :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Fichier 3D amorti</span><span>'+money(p.fichAmorti)+'</span></div>')
           :'')+
         (p.designCost>0||p.offertDesign
           ?(p.offertDesign
             ?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D <span style="background:rgba(200,255,87,.15);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono)">OFFERT</span></span><span style="text-decoration:line-through;opacity:.5">'+chf(p.designCostReel||0)+'</span></div>'
-            :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D</span><span>'+chf(p.designCost)+'</span></div>')
+            :'<div class="iline" style="font-size:12px;padding:5px 10px"><span>Creation 3D</span><span>'+money(p.designCost)+'</span></div>')
           :'')+
         filHtml+annHtml+fourHtml+
         '<div class="iline" style="font-size:11px;padding:5px 10px;opacity:.7"><span>Cout brut</span><span>'+chf(p.coutUnitaire)+'</span></div>'+
         '<div class="iline" style="font-size:12px;padding:5px 10px;border-top:1px solid var(--border);margin-top:2px"><span>+ Marge '+margePct+'% → arrondi</span><span style="font-family:var(--mono);font-weight:700;color:#fff">'+chf(p.prixUnitArrondi)+'/u</span></div>'+
-        (p.qty>1?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>x'+p.qty+' pieces</span><span style="font-family:var(--mono);font-weight:700;color:var(--accent)">'+chf(p.sousTotal)+'</span></div>':'')+
+        (p.qty>1?'<div class="iline" style="font-size:12px;padding:5px 10px"><span>x'+p.qty+' pieces</span><span style="font-family:var(--mono);font-weight:700;color:var(--accent)">'+money(p.sousTotal)+'</span></div>':'')+
       '</div>'+
     '</div>';
   }).join('');
@@ -1675,18 +1675,18 @@ function calcDevis(){
 
   var tempsTotal=r2(piecesResult.reduce(function(s,p){return s+((p.temps||0)*(p.qty||1));},0));
   setText('r-temps', tempsTotal+' h');
-  setText('r-total',chf(totalBrut));
+  setText('r-total',money(totalBrut));
   // Afficher le nb de pieces total dans le titre si >1
   var nbLabel=document.getElementById('r-pieces-count');
   if(nbLabel) nbLabel.textContent=totalPieces>1?' ('+totalPieces+' pieces)':'';
   document.getElementById('r-marge-pct').textContent='incluse par piece';
   document.getElementById('r-marge-val').textContent='';
   document.getElementById('r-marge-val').parentElement.style.display='none';
-  setText('r-arrondi',chf(totalBrut));
+  setText('r-arrondi',money(totalBrut));
   document.getElementById('r-arrondi').parentElement.style.display='none';
-  setText('r-envoi',envoi>0?chf(envoi):'—');
+  setText('r-envoi',envoi>0?money(envoi):'—');
   document.getElementById('r-envoi-row').style.display=envoi>0?'flex':'none';
-  setText('r-total-final',chf(prixTotal));
+  setText('r-total-final',money(prixTotal));
 
   document.getElementById('arch-msg').style.display='none';
   document.getElementById('arch-err').style.display='none';
