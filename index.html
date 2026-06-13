@@ -252,6 +252,7 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
         <button class="nav-btn" data-p="achat" onclick="goPage('achat')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>Achat bobines</button>
         <button class="nav-btn" data-p="commandes" onclick="goPage('commandes')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>Commandes <span id="badge-cmd" style="margin-left:auto;background:var(--warn);color:#000;border-radius:10px;font-size:10px;font-weight:700;padding:1px 7px;display:none"></span></button>
         <button class="nav-btn" data-p="archives" onclick="goPage('archives')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span>Archives</button>
+        <button class="nav-btn" data-p="carnet" onclick="goPage('carnet')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Carnet clients</button>
         <button class="nav-btn" data-p="clients" onclick="goPage('clients')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Clients</button>
         <button class="nav-btn" data-p="compta" onclick="goPage('compta')"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Compta</button>
         <button class="nav-btn" id="nav-admin" data-p="admin" onclick="goPage('admin')" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:12px"><span class="nav-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Admin</button>
@@ -322,7 +323,13 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
           <div class="grid2">
             <div>
               <label class="flabel">Nom du projet *</label><input id="d-nom" class="field" placeholder="ex: Coffret porte-outils"/>
-              <label class="flabel" style="margin-top:10px">Client</label><input id="d-client" class="field" placeholder="ex: AMI, 7 ART…"/>
+              <label class="flabel" style="margin-top:10px">Client</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                <select id="d-client-sel" class="field" onchange="selectClientFromCarnet()" style="flex:1">
+                  <option value="">— Choisir depuis le carnet —</option>
+                </select>
+              </div>
+              <input id="d-client" class="field" placeholder="ou saisir manuellement…"/>
             </div>
             <div>
               <label class="flabel">Type de marge</label>
@@ -464,6 +471,15 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
           <div id="cmd-historique-list"></div>
         </div>
       </div>
+      <!-- CARNET CLIENTS -->
+      <div id="page-carnet" class="page">
+        <div class="page-hdr">
+          <h1>Carnet clients</h1>
+          <button class="btn-primary" onclick="openClientModal()">+ Nouveau client</button>
+        </div>
+        <input id="search-carnet" class="field search-input" placeholder="🔎 Rechercher un client…" oninput="renderCarnet()"/>
+        <div id="carnet-list"></div>
+      </div>
       <!-- CLIENTS -->
       <div id="page-clients" class="page">
         <div class="page-hdr"><h1>Dossiers clients</h1></div>
@@ -554,6 +570,30 @@ select.field{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmln
     <div class="modal-foot">
       <button class="btn-primary" onclick="saveProfile()">Enregistrer</button>
       <button class="btn-secondary" onclick="document.getElementById('modal-profil').classList.remove('open')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARNET CLIENT -->
+<div id="modal-client" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <div class="modal-title" id="mc-title">Nouveau client</div>
+    <div class="grid2">
+      <div><label class="flabel">Prénom</label><input id="mc-prenom" class="field" placeholder="Jean"/></div>
+      <div><label class="flabel">Nom</label><input id="mc-nom" class="field" placeholder="Dupont"/></div>
+    </div>
+    <label class="flabel" style="margin-top:10px">Email</label>
+    <input id="mc-email" class="field" type="email" placeholder="jean@exemple.com"/>
+    <label class="flabel" style="margin-top:10px">Téléphone</label>
+    <input id="mc-tel" class="field" type="tel" placeholder="+41 79 000 00 00"/>
+    <label class="flabel" style="margin-top:10px">Adresse</label>
+    <input id="mc-adresse" class="field" placeholder="Rue et numéro, Ville"/>
+    <label class="flabel" style="margin-top:10px">Note</label>
+    <textarea id="mc-note" class="field" rows="2" style="resize:vertical;font-family:inherit" placeholder="Client fidèle, préférences…"></textarea>
+    <div id="mc-err" class="msg-error mt8"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn-primary w100" onclick="saveClient()">Enregistrer</button>
+      <button class="btn-secondary" onclick="document.getElementById('modal-client').classList.remove('open')">Annuler</button>
     </div>
   </div>
 </div>
@@ -666,7 +706,7 @@ firebase.initializeApp({
   appId:"1:643000650232:web:bd3c2752f0349bfbccee0d"
 });
 const AUTH=firebase.auth(), DB=firebase.firestore();
-let BOBS=[], ARCHS=[], FOURS=[], RESULT=null, CURRENT_PDF_TYPE='DEVIS', CURRENT_ARCH_PDF=null;
+let BOBS=[], ARCHS=[], FOURS=[], CLIENTS=[], RESULT=null, CURRENT_PDF_TYPE='DEVIS', CURRENT_ARCH_PDF=null;
 
 /* ── AUTH ── */
 AUTH.onAuthStateChanged(function(u){
@@ -754,6 +794,7 @@ function goPage(name){
   if(name==='commandes'){renderCommandes();}
   if(name==='achat'){renderAchat();}
   if(name==='clients'){renderClients();}
+  if(name==='carnet'){renderCarnet();}
   if(name==='compta'){renderCompta();}
   if(name==='admin'&&window._IS_ADMIN){renderAdmin();}
   if(name==='fournitures'){renderFournitures();}
@@ -761,7 +802,40 @@ function goPage(name){
 
 /* ── DATA ── */
 function loadAll(){
-  loadBobs().then(function(){loadArchs().then(function(){loadCmds().then(function(){loadFournitures().then(function(){renderAccueil();});});});});
+  loadBobs().then(function(){loadArchs().then(function(){loadCmds().then(function(){
+    loadFournitures().then(function(){
+      loadClients().then(function(){
+        renderAccueil();
+        refreshClientSelector();
+      });
+    });
+  });});});
+}
+
+function loadClients(){
+  return DB.collection('users/'+window._UID+'/clients').orderBy('nom').get().then(function(snap){
+    CLIENTS=snap.docs.map(function(d){return Object.assign({_id:d.id},d.data());});
+  }).catch(function(){CLIENTS=[];});
+}
+
+function refreshClientSelector(){
+  var sel=document.getElementById('d-client-sel');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Choisir depuis le carnet —</option>';
+  CLIENTS.forEach(function(c){
+    var opt=document.createElement('option');
+    opt.value=c._id;
+    opt.textContent=((c.prenom||'')+' '+(c.nom||'')).trim()+(c.email?' — '+c.email:'');
+    sel.appendChild(opt);
+  });
+}
+
+function selectClientFromCarnet(){
+  var sel=document.getElementById('d-client-sel');
+  var id=sel.value;
+  if(!id){document.getElementById('d-client').value='';return;}
+  var c=CLIENTS.find(function(x){return x._id===id;});
+  if(c) document.getElementById('d-client').value=((c.prenom||'')+' '+(c.nom||'')).trim();
 }
 
 /* ================================================== */
@@ -1621,38 +1695,40 @@ function calcDevis(){
 }
 
 function deduireStockFours(piecesDetail){
-  if(!piecesDetail||!piecesDetail.length) return;
-  // Agréger les quantités à déduire par fourniture
+  if(!piecesDetail||!piecesDetail.length||!window._UID) return;
+  // Agréger les quantités à déduire
   var updates={};
   piecesDetail.forEach(function(p){
     (p.fours||[]).forEach(function(f){
-      if(!f.offert && f.id && f.qty>0){
+      if(!f.offert && f.id && (f.qty||1)>0){
         updates[f.id]=(updates[f.id]||0)+(f.qty||1);
       }
     });
   });
   var ids=Object.keys(updates);
   if(!ids.length) return;
-  console.log('Déduction stock:', updates);
+  // Lire le stock actuel depuis Firestore (pas la mémoire) et soustraire
   ids.forEach(function(fid){
-    var four=FOURS.find(function(x){return x._id===fid;});
-    if(four){
-      var newStock=Math.max(0,(parseInt(four.stock)||0)-updates[fid]);
-      console.log('Stock',fid,':',four.stock,'->',newStock);
-      DB.collection('users/'+window._UID+'/fournitures').doc(fid)
-        .update({stock:newStock})
-        .then(function(){
-          four.stock=newStock;
-          loadFournitures().then(function(){
-            var page=document.getElementById('page-fournitures');
-            if(page&&page.classList.contains('active')) renderFournitures();
-          });
-        })
-        .catch(function(e){ console.error('Erreur déduction stock:', e); });
-    } else {
-      console.warn('Fourniture non trouvée en mémoire:', fid);
-    }
+    var ref=DB.collection('users/'+window._UID+'/fournitures').doc(fid);
+    ref.get().then(function(doc){
+      if(!doc.exists) return;
+      var stockActuel=parseInt(doc.data().stock)||0;
+      var newStock=Math.max(0, stockActuel - updates[fid]);
+      return ref.update({stock: newStock}).then(function(){
+        // Mettre à jour mémoire locale aussi
+        var inMem=FOURS.find(function(x){return x._id===fid;});
+        if(inMem) inMem.stock=newStock;
+        toast('Stock mis à jour : '+(doc.data().ref||fid)+' → '+newStock+' u');
+      });
+    }).catch(function(e){ console.error('Déduction stock erreur:', fid, e.message); });
   });
+  // Rafraîchir onglet fournitures si ouvert
+  setTimeout(function(){
+    loadFournitures().then(function(){
+      var p=document.getElementById('page-fournitures');
+      if(p&&p.classList.contains('active')) renderFournitures();
+    });
+  }, 800);
 }
 
 function archiverDevis(){
@@ -1813,6 +1889,87 @@ function delArch(id){
   DB.collection('users/'+window._UID+'/archives').doc(id).delete()
     .then(function(){loadArchs().then(function(){renderArchives();renderAccueil();toast('Supprimée');});})
     .catch(function(e){alert('Erreur : '+e.message);});
+}
+
+/* ── CARNET CLIENTS ── */
+var EDIT_CLIENT_ID=null;
+
+function openClientModal(id){
+  EDIT_CLIENT_ID=id||null;
+  var c=id?CLIENTS.find(function(x){return x._id===id;}):{};
+  document.getElementById('mc-title').textContent=id?'Modifier le client':'Nouveau client';
+  document.getElementById('mc-prenom').value=c&&c.prenom||'';
+  document.getElementById('mc-nom').value=c&&c.nom||'';
+  document.getElementById('mc-email').value=c&&c.email||'';
+  document.getElementById('mc-tel').value=c&&c.tel||'';
+  document.getElementById('mc-adresse').value=c&&c.adresse||'';
+  document.getElementById('mc-note').value=c&&c.note||'';
+  document.getElementById('mc-err').style.display='none';
+  document.getElementById('modal-client').classList.add('open');
+}
+
+function saveClient(){
+  var prenom=(document.getElementById('mc-prenom').value||'').trim();
+  var nom=(document.getElementById('mc-nom').value||'').trim();
+  var email=(document.getElementById('mc-email').value||'').trim();
+  var tel=(document.getElementById('mc-tel').value||'').trim();
+  var adresse=(document.getElementById('mc-adresse').value||'').trim();
+  var note=(document.getElementById('mc-note').value||'').trim();
+  var err=document.getElementById('mc-err');
+  if(!prenom&&!nom){err.textContent='Prénom ou nom obligatoire.';err.style.display='block';return;}
+  var data={prenom:prenom,nom:nom,email:email,tel:tel,adresse:adresse,note:note,updatedAt:Date.now()};
+  var ref=DB.collection('users/'+window._UID+'/clients');
+  var op=EDIT_CLIENT_ID?ref.doc(EDIT_CLIENT_ID).update(data):ref.add(Object.assign(data,{createdAt:Date.now()}));
+  op.then(function(){
+    document.getElementById('modal-client').classList.remove('open');
+    loadClients().then(function(){renderCarnet();refreshClientSelector();toast(EDIT_CLIENT_ID?'Client modifié':'Client ajouté ✓');});
+  }).catch(function(e){err.textContent='Erreur: '+e.message;err.style.display='block';});
+}
+
+function delClient(id){
+  if(!confirm('Supprimer ce client ?')) return;
+  DB.collection('users/'+window._UID+'/clients').doc(id).delete()
+    .then(function(){loadClients().then(function(){renderCarnet();refreshClientSelector();toast('Client supprimé');});})
+    .catch(function(e){toast('Erreur: '+e.message);});
+}
+
+function renderCarnet(){
+  var q=(document.getElementById('search-carnet').value||'').toLowerCase();
+  var container=document.getElementById('carnet-list');
+  var list=CLIENTS.filter(function(c){
+    return !q||(c.prenom||'').toLowerCase().includes(q)||(c.nom||'').toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q);
+  });
+  if(!list.length){container.innerHTML='<div class="empty">Aucun client dans le carnet</div>';return;}
+  container.innerHTML='';
+  container.onclick=function(e){
+    var btn=e.target.closest('[data-action]'); if(!btn) return;
+    var cid=btn.getAttribute('data-cid');
+    var act=btn.getAttribute('data-action');
+    if(act==='edit') openClientModal(cid);
+    else if(act==='del') delClient(cid);
+  };
+  var items=list.map(function(c){
+    var name=((c.prenom||'')+' '+(c.nom||'')).trim();
+    return '<div class="card" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:16px">'
+      +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="width:38px;height:38px;border-radius:50%;background:rgba(200,255,87,.1);border:1px solid rgba(200,255,87,.2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0">'
+          +((c.prenom||c.nom||'?')[0]).toUpperCase()
+        +'</div>'
+        +'<div>'
+          +'<div style="font-weight:600;color:#fff;font-size:14px">'+esc(name)+'</div>'
+          +(c.email?'<div style="font-size:12px;color:#a0a09a">'+esc(c.email)+'</div>':'')
+          +(c.tel?'<div style="font-size:12px;color:#a0a09a">'+esc(c.tel)+'</div>':'')
+          +(c.adresse?'<div style="font-size:12px;color:#888">'+esc(c.adresse)+'</div>':'')
+          +(c.note?'<div style="font-size:11px;color:#666;font-style:italic;margin-top:2px">'+esc(c.note)+'</div>':'')
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;flex-shrink:0">'
+        +'<button class="btn-secondary" style="font-size:12px;padding:6px 12px" data-cid="'+c._id+'" data-action="edit">Modifier</button>'
+        +'<button class="btn-del" data-cid="'+c._id+'" data-action="del">×</button>'
+      +'</div>'
+    +'</div>';
+  });
+  container.innerHTML+=items.join('');
 }
 
 /* ── PDF ── */
